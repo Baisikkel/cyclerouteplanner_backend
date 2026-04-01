@@ -2,7 +2,7 @@ name: "${APPLICATION_NAME:-cyclerouteplanner}"
 services:
   # PostgresSQL database service
   postgres:
-    image: "postgres:17"
+    image: "postgis/postgis:17-3.5"
     container_name: "db"
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-cyclerouteplanner}"
