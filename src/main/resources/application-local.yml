@@ -3,3 +3,11 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyclerouteplanner}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+
+logging:
+  level:
+    org.springframework.boot.docker.compose.core.DockerCli: WARN
+
+osm:
+  overpass:
+    base-url: ${OSM_OVERPASS_BASE_URL:https://overpass-api.de/api}

@@ -38,6 +38,7 @@ Bash
 ./mvnw clean install                # Build the project and install dependencies
 docker compose up -d                # Start database and other services
 ./mvnw spring-boot:run              # Launch the Spring Boot application
+./mvnw test                         # Run tests
 🏗 Project Structure
 src/main/java/ — Core application logic (Controllers, Services, Repositories)
 
