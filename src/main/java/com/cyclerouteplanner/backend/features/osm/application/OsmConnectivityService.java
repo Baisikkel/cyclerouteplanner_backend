@@ -16,6 +16,9 @@ public class OsmConnectivityService {
         this.osmStatusPort = osmStatusPort;
     }
 
+    /**
+     * Performs a minimal external call to confirm the configured OSM provider is reachable.
+     */
     public OsmConnectivityStatus checkConnectivity() {
         try {
             String statusPayload = osmStatusPort.fetchStatus();

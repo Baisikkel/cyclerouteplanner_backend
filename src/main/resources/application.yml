@@ -18,3 +18,7 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+address:
+  ads:
+    base-url: ${ADS_BASE_URL:https://xgis.maaamet.ee/adsavalik}

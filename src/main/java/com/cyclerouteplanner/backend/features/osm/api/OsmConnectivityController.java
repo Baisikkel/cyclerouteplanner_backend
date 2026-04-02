@@ -19,6 +19,9 @@ public class OsmConnectivityController {
         this.osmConnectivityService = osmConnectivityService;
     }
 
+    /**
+     * Lightweight health-style probe for OSM Overpass availability used during integration setup and diagnostics.
+     */
     @GetMapping("/connectivity")
     public ResponseEntity<OsmConnectivityResponse> connectivity() {
         OsmConnectivityStatus status = osmConnectivityService.checkConnectivity();
