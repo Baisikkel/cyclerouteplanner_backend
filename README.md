@@ -1,58 +1,70 @@
-Cycle Route Planner Backend 🚲
-This is the backend service for the Cycle Route Planner project, built with Java and Spring Boot. It provides optimized routing logic and integrates with advanced routing engines.
+# Cycle Route Planner Backend
 
-🔗 Useful Links
-Task Management: Linear Board
+Backend service for cycling route planning integrations. Current scope includes:
+- OSM/Overpass thin-slice connectivity check
+- Maa-amet ADS thin-slice connectivity and search check
+- PostgreSQL + PostGIS with Flyway migrations
 
-Meetings: Google Meet Link
+## Stack
+- Java 25
+- Spring Boot 4.x
+- PostgreSQL/PostGIS
+- Flyway
+- Maven
+- Docker / Docker Compose
 
-👥 Team Members
-Oliver (@olivertiks) — DevOps & Backend
+## Local Development
+1. Create `.env` from `.env.sample` and set credentials.
+2. Start only infrastructure (DB):
 
-Lukas (@lukashaavel) — Team Lead & Backend
+```powershell
+docker compose -f compose.yaml up -d
+```
 
-Natalia Egorova (@velesegorova12-code) — Documentation Specialist
+3. Run backend from IDE or terminal:
 
-Gretlin (@gretlin-prukk) — Frontend & Documentation
+```powershell
+.\mvnw.cmd spring-boot:run
+```
 
-Anett (@anettagr) — Project Management
+### Full Containerized Run
 
-Raivo (@RaivoT) — Infrastructure Support
+```powershell
+docker compose -f compose.full.yaml up -d
+```
 
-🛠 Tech Stack
-Language: Java 21 (Spring Boot)
+## API Docs (Swagger / OpenAPI)
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-Containerization: Docker & Docker Compose
+## Current API Endpoints
+- `GET /api/osm/connectivity`
+- `GET /api/address/connectivity`
+- `GET /api/address/search?query=...&limit=...`
 
-Build Tool: Maven
+## Configuration
+Profiles:
+- `local` (default): app on host + local/compose DB
+- `docker`: app inside container
+- `test`: lightweight test profile (no datasource)
+- `integration`: real DB integration tests via Testcontainers
 
-Routing Integration: BRouter / Digitransit (OTP2)
+Important env vars:
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_PORT`
+- `ADS_BASE_URL`
+- `OSM_OVERPASS_BASE_URL`
 
-💻 Backend Technical Standards
-🚀 Getting Started
-To run the service locally, ensure you have Java 21 and Docker installed.
+## Tests
+Run all tests:
 
-Build and Run
+```powershell
+.\mvnw.cmd test
+```
 
-Bash
-./mvnw clean install                # Build the project and install dependencies
-docker compose up -d                # Start database and other services
-./mvnw spring-boot:run              # Launch the Spring Boot application
-./mvnw test                         # Run tests
-🏗 Project Structure
-src/main/java/ — Core application logic (Controllers, Services, Repositories)
-
-src/main/resources/ — Configuration files and environment properties
-
-src/test/java/ — Unit and integration tests
-
-Dockerfile — Container configuration for production
-
-compose.yaml — Docker Compose orchestration for local development
-
-🎨 Development Guidelines
-Code Style: Strict adherence to Java formatting standards (enforced via Maven plugins).
-
-Architecture: Layered architecture focused on scalability and maintainability.
-
-Documentation: All API endpoints should be documented and follow RESTful principles.
+Notes:
+- Unit/controller tests run without Docker.
+- Integration test (`DatabaseMigrationIntegrationTest`) starts PostGIS via Testcontainers and validates Flyway migrations.
+- Docker Desktop must be reachable by the test JVM for integration tests.
