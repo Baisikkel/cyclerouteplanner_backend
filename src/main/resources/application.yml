@@ -45,3 +45,15 @@ geo:
     tallinn-source-layer: ${GEO_TALLINN_SOURCE_LAYER:tallinn_open_data}
     tallinn-feature-id-property: ${GEO_TALLINN_FEATURE_ID_PROPERTY:id}
     tallinn-feature-name-property: ${GEO_TALLINN_FEATURE_NAME_PROPERTY:name}
+  refresh:
+    scheduler:
+      enabled: ${GEO_REFRESH_SCHEDULER_ENABLED:false}
+      cron: ${GEO_REFRESH_SCHEDULER_CRON:0 0 */6 * * *}
+      ads-enabled: ${GEO_REFRESH_SCHEDULER_ADS_ENABLED:true}
+      osm-enabled: ${GEO_REFRESH_SCHEDULER_OSM_ENABLED:true}
+      tallinn-enabled: ${GEO_REFRESH_SCHEDULER_TALLINN_ENABLED:true}
+
+rate-limit:
+  refresh:
+    max-requests: ${REFRESH_RATE_LIMIT_MAX_REQUESTS:10}
+    window-seconds: ${REFRESH_RATE_LIMIT_WINDOW_SECONDS:60}
