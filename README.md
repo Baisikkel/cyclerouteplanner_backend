@@ -43,6 +43,11 @@ docker compose -f compose.full.yaml up -d
 - `GET /api/address/connectivity`
 - `GET /api/address/search?query=...&limit=...`
 - `POST /api/address/cache/refresh?query=...&limit=...`
+- `GET /api/geo/cache/status`
+- `POST /api/geo/cache/osm/ingest`
+- `POST /api/geo/cache/osm/refresh`
+- `POST /api/geo/cache/tallinn/ingest?sourceLayer=...`
+- `POST /api/geo/cache/tallinn/refresh`
 - `POST /api/ingest/run`
 - `GET /api/ingest/snapshots?limit=...`
 
@@ -65,6 +70,15 @@ Important env vars:
 - `ADS_SEARCH_LIMIT_PARAM`
 - `ADS_CACHE_REFRESH_DEFAULT_QUERY`
 - `ADS_CACHE_REFRESH_DEFAULT_LIMIT`
+- `GEO_DEFAULT_BBOX_SOUTH`
+- `GEO_DEFAULT_BBOX_WEST`
+- `GEO_DEFAULT_BBOX_NORTH`
+- `GEO_DEFAULT_BBOX_EAST`
+- `GEO_OVERPASS_TIMEOUT_SECONDS`
+- `GEO_TALLINN_SOURCE_URL`
+- `GEO_TALLINN_SOURCE_LAYER`
+- `GEO_TALLINN_FEATURE_ID_PROPERTY`
+- `GEO_TALLINN_FEATURE_NAME_PROPERTY`
 - `OSM_OVERPASS_BASE_URL`
 - `INGEST_SCHEDULER_ENABLED`
 - `INGEST_SCHEDULER_CRON`
