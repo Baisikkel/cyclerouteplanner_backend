@@ -21,4 +21,15 @@ springdoc:
 
 address:
   ads:
-    base-url: ${ADS_BASE_URL:https://xgis.maaamet.ee/adsavalik}
+    base-url: ${ADS_BASE_URL:https://inaadress.maaamet.ee}
+    status-path: ${ADS_STATUS_PATH:/inaadress/}
+    search-path: ${ADS_SEARCH_PATH:/inaadress/gazetteer}
+    search-query-param: ${ADS_SEARCH_QUERY_PARAM:address}
+    search-limit-param: ${ADS_SEARCH_LIMIT_PARAM:results}
+    cache-refresh-default-query: ${ADS_CACHE_REFRESH_DEFAULT_QUERY:Tallinn}
+    cache-refresh-default-limit: ${ADS_CACHE_REFRESH_DEFAULT_LIMIT:100}
+
+ingest:
+  scheduler:
+    enabled: ${INGEST_SCHEDULER_ENABLED:false}
+    cron: ${INGEST_SCHEDULER_CRON:0 0 */6 * * *}

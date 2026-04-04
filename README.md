@@ -3,6 +3,7 @@
 Backend service for cycling route planning integrations. Current scope includes:
 - OSM/Overpass thin-slice connectivity check
 - Maa-amet ADS thin-slice connectivity and search check
+- Ingest skeleton with snapshot tracking for planned geo data providers
 - PostgreSQL + PostGIS with Flyway migrations
 
 ## Stack
@@ -41,6 +42,9 @@ docker compose -f compose.full.yaml up -d
 - `GET /api/osm/connectivity`
 - `GET /api/address/connectivity`
 - `GET /api/address/search?query=...&limit=...`
+- `POST /api/address/cache/refresh?query=...&limit=...`
+- `POST /api/ingest/run`
+- `GET /api/ingest/snapshots?limit=...`
 
 ## Configuration
 Profiles:
@@ -55,7 +59,15 @@ Important env vars:
 - `POSTGRES_PASSWORD`
 - `POSTGRES_PORT`
 - `ADS_BASE_URL`
+- `ADS_STATUS_PATH`
+- `ADS_SEARCH_PATH`
+- `ADS_SEARCH_QUERY_PARAM`
+- `ADS_SEARCH_LIMIT_PARAM`
+- `ADS_CACHE_REFRESH_DEFAULT_QUERY`
+- `ADS_CACHE_REFRESH_DEFAULT_LIMIT`
 - `OSM_OVERPASS_BASE_URL`
+- `INGEST_SCHEDULER_ENABLED`
+- `INGEST_SCHEDULER_CRON`
 
 ## Tests
 Run all tests:
