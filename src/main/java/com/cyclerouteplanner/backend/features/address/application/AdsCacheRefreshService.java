@@ -22,6 +22,10 @@ import java.util.Map;
 public class AdsCacheRefreshService {
 
     private static final String PROVIDER = "maa-amet-ads";
+    private static final String RESULTS = "results";
+    private static final String ADDRESSES = "addresses";
+    private static final String ITEMS = "items";
+    private static final String COORDINATES = "coordinates";
     private final AdsGatewayPort adsGatewayPort;
     private final AdsAddressCachePort adsAddressCachePort;
     private final DataSnapshotPort dataSnapshotPort;
@@ -38,7 +42,7 @@ public class AdsCacheRefreshService {
     }
 
     public AdsCacheRefreshStatus refresh(String query, int limit) {
-        int sanitizedLimit = Math.max(1, Math.min(limit, 500));
+        int sanitizedLimit = Math.clamp(limit, 1, 500);
         try {
             String payload = adsGatewayPort.search(query, sanitizedLimit);
             int upsertedCount = upsertAddresses(payload);
@@ -107,14 +111,14 @@ public class AdsCacheRefreshService {
         if (root.isArray()) {
             return root;
         }
-        if (root.has("results") && root.get("results").isArray()) {
-            return root.get("results");
+        if (root.has(RESULTS) && root.get(RESULTS).isArray()) {
+            return root.get(RESULTS);
         }
-        if (root.has("addresses") && root.get("addresses").isArray()) {
-            return root.get("addresses");
+        if (root.has(ADDRESSES) && root.get(ADDRESSES).isArray()) {
+            return root.get(ADDRESSES);
         }
-        if (root.has("items") && root.get("items").isArray()) {
-            return root.get("items");
+        if (root.has(ITEMS) && root.get(ITEMS).isArray()) {
+            return root.get(ITEMS);
         }
         return objectMapper.createArrayNode();
     }
@@ -132,9 +136,9 @@ public class AdsCacheRefreshService {
 
         if ((longitude == null || latitude == null) && node.has("point")) {
             JsonNode point = node.get("point");
-            if (point.has("coordinates") && point.get("coordinates").isArray() && point.get("coordinates").size() >= 2) {
-                longitude = point.get("coordinates").get(0).asDouble();
-                latitude = point.get("coordinates").get(1).asDouble();
+            if (point.has(COORDINATES) && point.get(COORDINATES).isArray() && point.get(COORDINATES).size() >= 2) {
+                longitude = point.get(COORDINATES).get(0).asDouble();
+                latitude = point.get(COORDINATES).get(1).asDouble();
             }
         }
 
@@ -175,7 +179,7 @@ public class AdsCacheRefreshService {
             if (value != null && value.isTextual()) {
                 try {
                     return Double.parseDouble(value.asText());
-                } catch (NumberFormatException ignored) {
+                } catch (NumberFormatException _) {
                     // Continue scanning other candidate fields.
                 }
             }

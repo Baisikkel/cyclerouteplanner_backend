@@ -51,6 +51,54 @@ docker compose -f compose.full.yaml up -d
 - `POST /api/ingest/run`
 - `GET /api/ingest/snapshots?limit=...`
 
+## MVP Runbook
+Use this sequence for first-time local setup and verification.
+
+1. Start PostGIS:
+
+```powershell
+docker compose -f compose.yaml up -d
+```
+
+2. Start backend:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+3. Check source connectivity:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/address/connectivity"
+Invoke-RestMethod "http://localhost:8080/api/osm/connectivity"
+```
+
+4. Run manual refreshes (same order each time):
+
+```powershell
+Invoke-RestMethod -Method Post "http://localhost:8080/api/address/cache/refresh?query=Tallinn&limit=100"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/osm/refresh"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/tallinn/refresh"
+```
+
+5. Check cache/status API:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/geo/cache/status"
+```
+
+6. Quick SQL verification:
+
+```powershell
+docker exec -it db psql -U ${env:POSTGRES_USER} -d ${env:POSTGRES_DB} -c "select count(*) as ads_count from address.ads_address_cache;"
+docker exec -it db psql -U ${env:POSTGRES_USER} -d ${env:POSTGRES_DB} -c "select count(*) as osm_count from geo.osm_feature_cache;"
+docker exec -it db psql -U ${env:POSTGRES_USER} -d ${env:POSTGRES_DB} -c "select count(*) as tallinn_count from geo.tallinn_layer_cache;"
+docker exec -it db psql -U ${env:POSTGRES_USER} -d ${env:POSTGRES_DB} -c "select source, max(created_at) as last_ingested_at from meta.data_snapshot group by source order by source;"
+```
+
+If scheduled refresh is needed later, enable it in `.env`:
+- `GEO_REFRESH_SCHEDULER_ENABLED=true`
+
 ## Configuration
 Profiles:
 - `local` (default): app on host + local/compose DB

@@ -2,13 +2,15 @@ package com.cyclerouteplanner.backend.core.ratelimit;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RefreshRateLimiterTest {
 
     @Test
-    void blocksAfterConfiguredLimitAndResetsAfterWindow() throws Exception {
+    void blocksAfterConfiguredLimitAndResetsAfterWindow() {
         RefreshRateLimitProperties properties = new RefreshRateLimitProperties();
         properties.setMaxRequests(2);
         properties.setWindowSeconds(1);
@@ -18,8 +20,15 @@ class RefreshRateLimiterTest {
         assertTrue(limiter.allow("/api/geo/cache/osm/refresh", "127.0.0.1"));
         assertFalse(limiter.allow("/api/geo/cache/osm/refresh", "127.0.0.1"));
 
-        Thread.sleep(1_050);
+        boolean allowedAfterReset = false;
+        long deadline = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+        while (System.nanoTime() < deadline) {
+            if (limiter.allow("/api/geo/cache/osm/refresh", "127.0.0.1")) {
+                allowedAfterReset = true;
+                break;
+            }
+        }
 
-        assertTrue(limiter.allow("/api/geo/cache/osm/refresh", "127.0.0.1"));
+        assertTrue(allowedAfterReset);
     }
 }

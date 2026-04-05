@@ -37,14 +37,14 @@ public class DataIngestController {
                 .toList();
     }
 
-    private DataSnapshotResponse toResponse(DataSnapshotRecord record) {
+    private DataSnapshotResponse toResponse(DataSnapshotRecord snapshot) {
         return new DataSnapshotResponse(
-                record.source(),
-                record.sourceVersion(),
-                record.sourceTimestamp(),
-                record.checksum(),
-                record.metadata(),
-                record.createdAt()
+                snapshot.source(),
+                snapshot.sourceVersion(),
+                snapshot.sourceTimestamp(),
+                snapshot.checksum(),
+                snapshot.metadata(),
+                snapshot.createdAt()
         );
     }
 }

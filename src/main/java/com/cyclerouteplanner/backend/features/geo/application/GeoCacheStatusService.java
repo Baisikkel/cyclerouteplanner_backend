@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Objects;
 
 @Service
 @Profile({"local", "docker"})
@@ -39,8 +40,11 @@ public class GeoCacheStatusService {
     }
 
     private GeoCacheSourceStatusResponse buildSourceStatus(String source, String tableName) {
-        Long rowCount = jdbcTemplate.queryForObject("select count(*) from " + tableName, Long.class);
-        SnapshotTimes times = jdbcTemplate.queryForObject(
+        Long rowCountResult = jdbcTemplate.queryForObject("select count(*) from " + tableName, Long.class);
+        long rowCount = rowCountResult == null ? 0L : rowCountResult;
+
+        SnapshotTimes times = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
                 """
                 select max(created_at) as created_at, max(source_timestamp) as source_timestamp
                 from meta.data_snapshot
@@ -51,13 +55,15 @@ public class GeoCacheStatusService {
                         timestampToInstant(resultSet, "source_timestamp")
                 ),
                 source
+                ),
+                "Snapshot query returned null"
         );
 
         return new GeoCacheSourceStatusResponse(
                 source,
-                rowCount == null ? 0 : rowCount,
-                times == null ? null : times.createdAt(),
-                times == null ? null : times.sourceTimestamp()
+                rowCount,
+                times.createdAt(),
+                times.sourceTimestamp()
         );
     }
 
