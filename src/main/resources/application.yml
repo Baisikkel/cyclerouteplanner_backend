@@ -1,0 +1,62 @@
+spring:
+  profiles:
+    default: local
+  application:
+    name: ${APPLICATION_NAME:cyclerouteplanner-backend}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+api:
+  dev-endpoints-enabled: ${API_DEV_ENDPOINTS_ENABLED:true}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+address:
+  ads:
+    base-url: ${ADS_BASE_URL:https://inaadress.maaamet.ee}
+    status-path: ${ADS_STATUS_PATH:/inaadress/}
+    search-path: ${ADS_SEARCH_PATH:/inaadress/gazetteer}
+    search-query-param: ${ADS_SEARCH_QUERY_PARAM:address}
+    search-limit-param: ${ADS_SEARCH_LIMIT_PARAM:results}
+    cache-refresh-default-query: ${ADS_CACHE_REFRESH_DEFAULT_QUERY:Tallinn}
+    cache-refresh-default-limit: ${ADS_CACHE_REFRESH_DEFAULT_LIMIT:100}
+
+ingest:
+  scheduler:
+    enabled: ${INGEST_SCHEDULER_ENABLED:false}
+    cron: ${INGEST_SCHEDULER_CRON:0 0 */6 * * *}
+
+geo:
+  ingest:
+    default-bbox-south: ${GEO_DEFAULT_BBOX_SOUTH:59.30}
+    default-bbox-west: ${GEO_DEFAULT_BBOX_WEST:24.50}
+    default-bbox-north: ${GEO_DEFAULT_BBOX_NORTH:59.52}
+    default-bbox-east: ${GEO_DEFAULT_BBOX_EAST:24.93}
+    overpass-timeout-seconds: ${GEO_OVERPASS_TIMEOUT_SECONDS:25}
+    tallinn-source-url: ${GEO_TALLINN_SOURCE_URL:https://gis.tallinn.ee/arcgis/rest/services/Rattateed/MapServer/0/query?where=1%3D1&outFields=*&f=geojson}
+    tallinn-source-layer: ${GEO_TALLINN_SOURCE_LAYER:tallinn_open_data}
+    tallinn-feature-id-property: ${GEO_TALLINN_FEATURE_ID_PROPERTY:id}
+    tallinn-feature-name-property: ${GEO_TALLINN_FEATURE_NAME_PROPERTY:name}
+  refresh:
+    scheduler:
+      enabled: ${GEO_REFRESH_SCHEDULER_ENABLED:false}
+      cron: ${GEO_REFRESH_SCHEDULER_CRON:0 0 */6 * * *}
+      ads-enabled: ${GEO_REFRESH_SCHEDULER_ADS_ENABLED:true}
+      osm-enabled: ${GEO_REFRESH_SCHEDULER_OSM_ENABLED:true}
+      tallinn-enabled: ${GEO_REFRESH_SCHEDULER_TALLINN_ENABLED:true}
+
+rate-limit:
+  refresh:
+    max-requests: ${REFRESH_RATE_LIMIT_MAX_REQUESTS:10}
+    window-seconds: ${REFRESH_RATE_LIMIT_WINDOW_SECONDS:60}

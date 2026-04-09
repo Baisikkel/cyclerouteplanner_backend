@@ -1,57 +1,84 @@
-Cycle Route Planner Backend 🚲
-This is the backend service for the Cycle Route Planner project, built with Java and Spring Boot. It provides optimized routing logic and integrates with advanced routing engines.
+# Cycle Route Planner Backend
 
-🔗 Useful Links
-Task Management: Linear Board
+Backend service for cycling route planning integrations.
 
-Meetings: Google Meet Link
+Current scope:
+- OSM/Overpass connectivity and cycling-network ingest
+- Maa-amet ADS connectivity and address cache refresh
+- Tallinn open data GeoJSON ingest
+- PostgreSQL + PostGIS with Flyway migrations
 
-👥 Team Members
-Oliver (@olivertiks) — DevOps & Backend
+## Stack
+- Java 25
+- Spring Boot 4.x
+- PostgreSQL/PostGIS
+- Flyway
+- Maven
+- Docker Compose
 
-Lukas (@lukashaavel) — Team Lead & Backend
+## Local Setup
+1. Create `.env` from `.env.sample`.
+2. Start database only:
 
-Natalia Egorova (@velesegorova12-code) — Documentation Specialist
+```powershell
+docker compose up -d postgres
+```
 
-Gretlin (@gretlin-prukk) — Frontend & Documentation
+3. Run backend from IDE or terminal:
 
-Anett (@anettagr) — Project Management
+```powershell
+.\mvnw.cmd spring-boot:run
+```
 
-Raivo (@RaivoT) — Infrastructure Support
+## Full Containerized Setup
+Start backend + database:
 
-🛠 Tech Stack
-Language: Java 21 (Spring Boot)
+```powershell
+docker compose up -d --build
+```
 
-Containerization: Docker & Docker Compose
+Database only:
 
-Build Tool: Maven
+```powershell
+docker compose up -d postgres
+```
 
-Routing Integration: BRouter / Digitransit (OTP2)
+## API Docs
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-💻 Backend Technical Standards
-🚀 Getting Started
-To run the service locally, ensure you have Java 21 and Docker installed.
+## Populate Database
+Run these in this order after backend is up:
 
-Build and Run
+```powershell or from Swagger
+Invoke-RestMethod -Method Post "http://localhost:8080/api/address/cache/refresh?query=Tallinn&limit=100"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/osm/refresh"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/tallinn/refresh"
+```
 
-Bash
-./mvnw clean install                # Build the project and install dependencies
-docker compose up -d                # Start database and other services
-./mvnw spring-boot:run              # Launch the Spring Boot application
-🏗 Project Structure
-src/main/java/ — Core application logic (Controllers, Services, Repositories)
+Check ingest result:
 
-src/main/resources/ — Configuration files and environment properties
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/geo/cache/status"
+```
 
-src/test/java/ — Unit and integration tests
+Optional source connectivity checks:
+- `GET /api/address/connectivity`
+- `GET /api/osm/connectivity`
 
-Dockerfile — Container configuration for production
+Dev-only endpoints (`API_DEV_ENDPOINTS_ENABLED=true`):
+- `POST /api/geo/cache/osm/ingest`
+- `POST /api/geo/cache/tallinn/ingest?sourceLayer=...`
+- `POST /api/ingest/run`
+- `GET /api/ingest/snapshots?limit=...`
 
-compose.yaml — Docker Compose orchestration for local development
+## Tests
+Run all tests:
 
-🎨 Development Guidelines
-Code Style: Strict adherence to Java formatting standards (enforced via Maven plugins).
+```powershell
+.\mvnw.cmd test
+```
 
-Architecture: Layered architecture focused on scalability and maintainability.
-
-Documentation: All API endpoints should be documented and follow RESTful principles.
+Notes:
+- Unit/controller tests run without Docker.
+- Integration tests use Testcontainers PostGIS.
