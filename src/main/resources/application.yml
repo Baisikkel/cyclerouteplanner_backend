@@ -13,6 +13,9 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+api:
+  dev-endpoints-enabled: ${API_DEV_ENDPOINTS_ENABLED:true}
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -41,7 +44,7 @@ geo:
     default-bbox-north: ${GEO_DEFAULT_BBOX_NORTH:59.52}
     default-bbox-east: ${GEO_DEFAULT_BBOX_EAST:24.93}
     overpass-timeout-seconds: ${GEO_OVERPASS_TIMEOUT_SECONDS:25}
-    tallinn-source-url: ${GEO_TALLINN_SOURCE_URL:}
+    tallinn-source-url: ${GEO_TALLINN_SOURCE_URL:https://gis.tallinn.ee/arcgis/rest/services/Rattateed/MapServer/0/query?where=1%3D1&outFields=*&f=geojson}
     tallinn-source-layer: ${GEO_TALLINN_SOURCE_LAYER:tallinn_open_data}
     tallinn-feature-id-property: ${GEO_TALLINN_FEATURE_ID_PROPERTY:id}
     tallinn-feature-name-property: ${GEO_TALLINN_FEATURE_NAME_PROPERTY:name}

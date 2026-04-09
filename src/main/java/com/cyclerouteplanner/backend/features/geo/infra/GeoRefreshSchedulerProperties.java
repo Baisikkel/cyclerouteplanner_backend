@@ -5,11 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "geo.refresh.scheduler")
 public class GeoRefreshSchedulerProperties {
 
-    private boolean enabled = false;
-    private String cron = "0 0 */6 * * *";
-    private boolean adsEnabled = true;
-    private boolean osmEnabled = true;
-    private boolean tallinnEnabled = true;
+    private boolean enabled;
+    private String cron;
+    private boolean adsEnabled;
+    private boolean osmEnabled;
+    private boolean tallinnEnabled;
 
     public boolean isEnabled() {
         return enabled;

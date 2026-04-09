@@ -5,15 +5,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "geo.ingest")
 public class GeoIngestProperties {
 
-    private double defaultBboxSouth = 59.30;
-    private double defaultBboxWest = 24.50;
-    private double defaultBboxNorth = 59.52;
-    private double defaultBboxEast = 24.93;
-    private int overpassTimeoutSeconds = 25;
-    private String tallinnSourceUrl = "";
-    private String tallinnSourceLayer = "tallinn_open_data";
-    private String tallinnFeatureIdProperty = "id";
-    private String tallinnFeatureNameProperty = "name";
+    private double defaultBboxSouth;
+    private double defaultBboxWest;
+    private double defaultBboxNorth;
+    private double defaultBboxEast;
+    private int overpassTimeoutSeconds;
+    private String tallinnSourceUrl;
+    private String tallinnSourceLayer;
+    private String tallinnFeatureIdProperty;
+    private String tallinnFeatureNameProperty;
 
     public double getDefaultBboxSouth() {
         return defaultBboxSouth;

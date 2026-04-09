@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "osm.overpass")
 public class OverpassClientProperties {
 
-    private String baseUrl = "https://overpass-api.de/api";
+    private String baseUrl;
 
     public String getBaseUrl() {
         return baseUrl;
