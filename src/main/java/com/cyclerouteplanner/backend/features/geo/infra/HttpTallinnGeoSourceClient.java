@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.URI;
+
 @Component
 @Profile({"local", "docker"})
 public class HttpTallinnGeoSourceClient implements TallinnGeoSourcePort {
@@ -14,7 +16,7 @@ public class HttpTallinnGeoSourceClient implements TallinnGeoSourcePort {
     @Override
     public String fetchGeoJson(String sourceUrl) {
         return restClient.get()
-                .uri(sourceUrl)
+                .uri(URI.create(sourceUrl))
                 .retrieve()
                 .body(String.class);
     }

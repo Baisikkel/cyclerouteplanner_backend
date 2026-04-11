@@ -46,6 +46,15 @@ public class TallinnGeoRefreshService {
     private List<TallinnLayerCacheEntry> parseEntries(String payload) {
         try {
             JsonNode root = objectMapper.readTree(payload);
+            JsonNode error = root.path("error");
+            if (error.isObject()) {
+                String message = firstNonBlank(
+                        valueAsString(error.get("message")),
+                        valueAsString(error.get("details")),
+                        "Unknown source error"
+                );
+                throw new IllegalStateException("Tallinn source returned error: " + message);
+            }
             JsonNode features = root.path("features");
             if (!features.isArray()) {
                 return List.of();

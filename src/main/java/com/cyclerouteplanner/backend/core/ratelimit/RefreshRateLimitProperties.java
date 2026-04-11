@@ -5,8 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "rate-limit.refresh")
 public class RefreshRateLimitProperties {
 
-    private int maxRequests = 10;
-    private int windowSeconds = 60;
+    private int maxRequests;
+    private int windowSeconds;
 
     public int getMaxRequests() {
         return maxRequests;

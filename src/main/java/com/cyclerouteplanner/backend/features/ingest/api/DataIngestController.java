@@ -3,6 +3,7 @@ package com.cyclerouteplanner.backend.features.ingest.api;
 import com.cyclerouteplanner.backend.features.ingest.api.dto.response.DataSnapshotResponse;
 import com.cyclerouteplanner.backend.features.ingest.application.DataIngestService;
 import com.cyclerouteplanner.backend.features.ingest.domain.DataSnapshotRecord;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/ingest")
 @Profile({"local", "docker"})
+@ConditionalOnProperty(prefix = "api", name = "dev-endpoints-enabled", havingValue = "true")
 public class DataIngestController {
 
     private final DataIngestService dataIngestService;
