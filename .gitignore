@@ -34,3 +34,6 @@ build/
 
 # Local env files
 .env
+
+# BRouter routing segments (large binaries — download, don't commit)
+brouter/segments4/*.rd5
