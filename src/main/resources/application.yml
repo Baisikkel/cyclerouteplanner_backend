@@ -56,6 +56,10 @@ geo:
       osm-enabled: ${GEO_REFRESH_SCHEDULER_OSM_ENABLED:true}
       tallinn-enabled: ${GEO_REFRESH_SCHEDULER_TALLINN_ENABLED:true}
 
+routing:
+  brouter:
+    base-url: ${ROUTING_BROUTER_BASE_URL:https://brouter.de/brouter}
+
 rate-limit:
   refresh:
     max-requests: ${REFRESH_RATE_LIMIT_MAX_REQUESTS:10}
