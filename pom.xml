@@ -124,6 +124,8 @@
 	</dependencies>
 
 	<build>
+		<!-- Stable JAR name for Docker / scripts (${project.version} still in META-INF) -->
+		<finalName>app</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

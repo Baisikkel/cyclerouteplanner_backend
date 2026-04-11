@@ -1,0 +1,12 @@
+# Fresh Maven build inside the image (avoid huge context + stale classes)
+target/
+
+.git
+.env
+.env.*
+
+.idea/
+*.iml
+.vscode/
+
+brouter/segments4/*.rd5
