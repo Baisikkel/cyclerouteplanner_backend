@@ -4,6 +4,7 @@ import com.cyclerouteplanner.backend.features.geo.domain.GeoCacheIngestStatus;
 import com.cyclerouteplanner.backend.features.geo.domain.OsmFeatureCacheEntry;
 import com.cyclerouteplanner.backend.features.geo.domain.OsmGeoSourcePort;
 import com.cyclerouteplanner.backend.features.geo.infra.GeoIngestProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Profile;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Profile({"local", "docker"})
+@Profile({ "local", "docker" })
 public class OsmGeoRefreshService {
 
     private final OsmGeoSourcePort osmGeoSourcePort;
@@ -25,8 +26,7 @@ public class OsmGeoRefreshService {
     public OsmGeoRefreshService(
             OsmGeoSourcePort osmGeoSourcePort,
             GeoCacheIngestService geoCacheIngestService,
-            GeoIngestProperties geoIngestProperties
-    ) {
+            GeoIngestProperties geoIngestProperties) {
         this.osmGeoSourcePort = osmGeoSourcePort;
         this.geoCacheIngestService = geoCacheIngestService;
         this.geoIngestProperties = geoIngestProperties;
@@ -38,8 +38,7 @@ public class OsmGeoRefreshService {
                 geoIngestProperties.getDefaultBboxWest(),
                 geoIngestProperties.getDefaultBboxNorth(),
                 geoIngestProperties.getDefaultBboxEast(),
-                geoIngestProperties.getOverpassTimeoutSeconds()
-        );
+                geoIngestProperties.getOverpassTimeoutSeconds());
         List<OsmFeatureCacheEntry> entries = parseEntries(payload);
         return geoCacheIngestService.ingestOsmFeatures(entries);
     }
@@ -79,7 +78,13 @@ public class OsmGeoRefreshService {
 
         JsonNode tagsNode = element.path("tags");
         Map<String, Object> tags = tagsNode.isObject()
-                ? objectMapper.convertValue(tagsNode, Map.class)
+                ? objectMapper.convertValue(
+                        tagsNode,
+                        new TypeReference<Map<String, Object>>() {
+                            // Use a TypeReference so Jackson preserves the generic type information
+                            // when converting the JsonNode to a Map<String, Object>.
+                            // This avoids the unchecked raw Map.class conversion warning.
+                        })
                 : Map.of();
         String name = tags.get("name") instanceof String value ? value : null;
         String featureType = tags.get("highway") instanceof String value ? value : type;
@@ -90,16 +95,14 @@ public class OsmGeoRefreshService {
                 featureType,
                 tags,
                 wktGeometry,
-                element.toString()
-        );
+                element.toString());
     }
 
     private String extractWkt(JsonNode element) {
         if (element.has("lat") && element.has("lon")) {
             return "POINT(%s %s)".formatted(
                     element.get("lon").asText(),
-                    element.get("lat").asText()
-            );
+                    element.get("lat").asText());
         }
 
         JsonNode geometry = element.path("geometry");
