@@ -31,10 +31,9 @@ services:
       - "${SERVER_PORT:-8080}:8080"
     volumes:
       - .:/app
-      - ~/.m2:/root/.m2
+      - maven_cache:/root/.m2  # <--- Use a named volume
     environment:
-      # Same as top-level compose `name:` / .env — Spring reads this (application.yml).
-      APPLICATION_NAME: ${APPLICATION_NAME:-cyclerouteplanner}
+      APPLICATION_NAME: ${APPLICATION_NAME:-cyclerouteplanner} # Same as top-level compose `name:` / .env — Spring reads this (application.yml).
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cyclerouteplanner}"
       SPRING_DATASOURCE_USERNAME: "${POSTGRES_USER:-postgres}"
@@ -56,4 +55,4 @@ services:
 # Persistent volume for database data
 volumes:
   postgres_data:
-
+  maven_cache:
