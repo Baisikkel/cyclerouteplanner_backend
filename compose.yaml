@@ -1,6 +1,6 @@
 name: "${APPLICATION_NAME:-cyclerouteplanner}"
 services:
-  # PostgresSQL database service.
+  # PostgresSQL database service
   postgres:
     image: "postgis/postgis:17-3.5"
     container_name: "db"
@@ -19,15 +19,21 @@ services:
       timeout: 5s
       retries: 5
 
-  # Spring Boot backend service.
+  # Spring Boot backend service (development stage: source mount + Maven).
   backend:
     build:
       context: "."
       dockerfile: Dockerfile
+      target: development
     container_name: "backend"
+    command: ["/bin/sh", "-c", "chmod +x mvnw && ./mvnw spring-boot:run"]
     ports:
       - "${SERVER_PORT:-8080}:8080"
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2  # <--- Use a named volume
     environment:
+      APPLICATION_NAME: ${APPLICATION_NAME:-cyclerouteplanner} # Same as top-level compose `name:` / .env — Spring reads this (application.yml).
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cyclerouteplanner}"
       SPRING_DATASOURCE_USERNAME: "${POSTGRES_USER:-postgres}"
@@ -49,4 +55,4 @@ services:
 # Persistent volume for database data
 volumes:
   postgres_data:
-
+  maven_cache:

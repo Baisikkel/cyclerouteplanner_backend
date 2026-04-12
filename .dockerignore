@@ -1,0 +1,33 @@
+# Build artifacts
+target/
+*.jar
+*.war
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.nb-shortcut
+.nb-configuration.xml
+
+# Git
+.git
+.gitignore
+
+# Environment and Secrets
+.env
+.env.*
+
+# OS junk
+**/.DS_Store
+Thumbs.db
+
+# Large Data (Cycle Router specific)
+**/segments4/*.rd5
+**/segments4/*.cache
+
+# Maven wrapper (Optional: if you want to ensure Docker uses its own cached wrapper)
+# .mvn/wrapper/maven-wrapper.jar

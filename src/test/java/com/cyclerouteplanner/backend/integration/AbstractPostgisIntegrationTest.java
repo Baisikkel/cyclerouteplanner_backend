@@ -15,9 +15,16 @@ abstract class AbstractPostgisIntegrationTest {
     protected AbstractPostgisIntegrationTest() {
     }
 
+    /*
+     * Using Testcontainers to run a PostGIS-enabled PostgreSQL database in a Docker
+     * container for integration testing.
+     * The "resource leak" is handled by Testcontainers, which will automatically
+     * stop the container when the JVM exits. This is a common pattern in
+     * integration tests using Testcontainers.
+     */
+    @SuppressWarnings("resource")
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
-            DockerImageName.parse("postgis/postgis:17-3.5").asCompatibleSubstituteFor("postgres")
-    )
+            DockerImageName.parse("postgis/postgis:17-3.5").asCompatibleSubstituteFor("postgres"))
             .withDatabaseName("cyclerouteplanner")
             .withUsername("test")
             .withPassword("test");
