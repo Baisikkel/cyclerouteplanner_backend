@@ -1,6 +1,6 @@
 name: "${APPLICATION_NAME:-cyclerouteplanner}"
 services:
-  # PostgresSQL database service.
+  # PostgresSQL database service
   postgres:
     image: "postgis/postgis:17-3.5"
     container_name: "db"
@@ -19,7 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Spring Boot backend service.
+  # Spring Boot backend service (for full containerized runs)
   backend:
     build:
       context: "."

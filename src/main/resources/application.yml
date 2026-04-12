@@ -2,7 +2,7 @@ spring:
   profiles:
     default: local
   application:
-    name: ${APPLICATION_NAME:cyclerouteplanner-backend}
+    name: ${APPLICATION_NAME:cyclerouteplanner}
   jpa:
     hibernate:
       ddl-auto: validate
