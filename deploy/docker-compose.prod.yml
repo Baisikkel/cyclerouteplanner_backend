@@ -1,0 +1,46 @@
+name: cyclerouteplanner
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: cyclerouteplanner-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cyclerouteplanner}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - cycleroute_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/cyclerouteplanner-backend:latest
+    container_name: cyclerouteplanner-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_HOST_PORT:-18080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cyclerouteplanner}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      OSM_OVERPASS_BASE_URL: ${OSM_OVERPASS_BASE_URL:-https://overpass-api.de/api}
+      GEO_DEFAULT_BBOX_SOUTH: ${GEO_DEFAULT_BBOX_SOUTH:-59.30}
+      GEO_DEFAULT_BBOX_WEST: ${GEO_DEFAULT_BBOX_WEST:-24.50}
+      GEO_DEFAULT_BBOX_NORTH: ${GEO_DEFAULT_BBOX_NORTH:-59.52}
+      GEO_DEFAULT_BBOX_EAST: ${GEO_DEFAULT_BBOX_EAST:-24.93}
+      GEO_OVERPASS_TIMEOUT_SECONDS: ${GEO_OVERPASS_TIMEOUT_SECONDS:-25}
+      GEO_TALLINN_SOURCE_URL: ${GEO_TALLINN_SOURCE_URL:-https://gis.tallinn.ee/arcgis/rest/services/Rattateed/MapServer/0/query?where=1%3D1&outFields=*&f=geojson}
+      GEO_TALLINN_SOURCE_LAYER: ${GEO_TALLINN_SOURCE_LAYER:-tallinn_open_data}
+      GEO_TALLINN_FEATURE_ID_PROPERTY: ${GEO_TALLINN_FEATURE_ID_PROPERTY:-id}
+      GEO_TALLINN_FEATURE_NAME_PROPERTY: ${GEO_TALLINN_FEATURE_NAME_PROPERTY:-name}
+
+volumes:
+  cycleroute_postgres_data:
