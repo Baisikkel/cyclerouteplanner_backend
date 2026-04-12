@@ -18,7 +18,8 @@ services:
       retries: 10
 
   backend:
-    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/cyclerouteplanner-backend:latest
+    # GHCR_OWNER must be lowercase to match the GHCR image path produced by CI.
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER (lowercase) is required}/cyclerouteplanner-backend:latest
     container_name: cyclerouteplanner-backend
     restart: unless-stopped
     depends_on:
