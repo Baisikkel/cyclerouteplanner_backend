@@ -1,0 +1,6 @@
+# The Dockerfile downloads brouter from GitHub at build time, so docker
+# does not need to copy anything else from this folder. Blocking everything
+# except the two files we actually use keeps the build fast.
+*
+!Dockerfile
+!entrypoint.sh
