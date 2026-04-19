@@ -20,9 +20,9 @@ services:
   # BRouter bicycle routing engine (self-hosted). Built on the server from
   # the pinned Dockerfile in deploy/brouter/. The map data files (.rd5) must
   # be downloaded once on the server before the container can answer — run
-  # ./brouter/fetch-segments.sh from DEPLOY_PATH after the first clone.
-  # Not exposed to the public internet; only the backend reaches it over
-  # the internal docker network.
+  # deploy/brouter/fetch-segments.sh (from wherever the server keeps the
+  # repo). Not exposed to the public internet; only the backend reaches it
+  # over the internal docker network.
   brouter:
     build:
       context: ./brouter
