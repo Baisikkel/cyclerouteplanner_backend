@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Downloads BRouter routing data for Tallinn + Harjumaa (~100-200 MB, one-off).
+# Downloads BRouter routing data for Tallinn + Harjumaa (~40 MB, one-off).
 # Safe to re-run — files that are already there get skipped.
 #
 # Run from the backend repo root:

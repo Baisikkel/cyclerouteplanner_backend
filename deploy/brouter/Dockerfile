@@ -21,6 +21,12 @@ ENV BROUTER_VERSION=${BROUTER_VERSION} \
 
 WORKDIR /opt
 
+# Runtime dependency: nc (netcat) is used by the docker-compose healthcheck
+# to confirm the port is open. Alpine's busybox ships a minimal nc, but
+# installing netcat-openbsd explicitly makes the dependency visible in the
+# Dockerfile and survives any future change of the base image.
+RUN apk add --no-cache netcat-openbsd
+
 # Download the release zip from GitHub and extract it to /opt/brouter.
 # The zip contains a JAR file whose filename includes the version
 # number; we add a short-name link (symlink) "brouter.jar" pointing at

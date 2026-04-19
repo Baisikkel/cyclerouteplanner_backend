@@ -88,7 +88,7 @@ bundled script, run from the backend repo root:
 ./deploy/brouter/fetch-segments.sh
 ```
 
-This downloads ~100-200 MB of routing data for Tallinn and Harjumaa into
+This downloads ~40 MB of routing data for Tallinn and Harjumaa into
 `deploy/brouter/segments/` and skips files that are already there on repeat
 runs.
 
