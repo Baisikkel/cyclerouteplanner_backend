@@ -3,7 +3,7 @@
 # Safe to re-run — files that are already there get skipped.
 #
 # Run from the backend repo root:
-#     ./deploy/brouter/fetch-segments.sh
+#     ./brouter/fetch-segments.sh
 #
 # Background: BRouter cuts the world into square map tiles. Tallinn and
 # Harjumaa fit into the two tiles listed below. The files are too big to

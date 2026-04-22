@@ -40,8 +40,9 @@ public class RouteController {
             @RequestParam double startLat,
             @RequestParam double startLon,
             @RequestParam double endLat,
-            @RequestParam double endLon) {
-        String body = brouterService.getRoute(startLat, startLon, endLat, endLon);
+            @RequestParam double endLon,
+            @RequestParam(defaultValue = "trekking") String profile) {
+        String body = brouterService.getRoute(startLat, startLon, endLat, endLon, profile);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body.getBytes(StandardCharsets.UTF_8));
     }
 }
