@@ -1,5 +1,0 @@
-# Map data files (downloaded by deploy/brouter/fetch-segments.sh).
-# Too big to keep in git — always download them on each machine instead.
-*.rd5
-*.tmp
-!.gitignore
