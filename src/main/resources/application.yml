@@ -58,7 +58,12 @@ geo:
 
 routing:
   brouter:
-    base-url: ${ROUTING_BROUTER_BASE_URL:https://brouter.de/brouter}
+    # Default assumes the self-hosted brouter container is running and
+    # reachable on localhost:17777 (the port exposed by compose.yaml for
+    # developers running the backend outside docker). When the backend
+    # runs inside docker-compose, ROUTING_BROUTER_BASE_URL is set to
+    # http://brouter:17777/brouter via the compose environment block.
+    base-url: ${ROUTING_BROUTER_BASE_URL:http://localhost:17777/brouter}
 
 rate-limit:
   refresh:

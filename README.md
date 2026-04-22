@@ -72,6 +72,54 @@ Dev-only endpoints (`API_DEV_ENDPOINTS_ENABLED=true`):
 - `POST /api/ingest/run`
 - `GET /api/ingest/snapshots?limit=...`
 
+## BRouter (Routing Engine)
+
+The backend uses [BRouter](https://github.com/abrensch/brouter) to plan
+cycling routes. We run our own copy in a container so we do not depend on
+the public brouter.de service. See `deploy/brouter/` for the Dockerfile,
+entrypoint script, routing profiles, and the map data folder.
+
+### First-time setup (once per machine)
+
+Map data files are too large to keep in git — download them with the
+bundled script, run from the backend repo root:
+
+```sh
+./deploy/brouter/fetch-segments.sh
+```
+
+This downloads ~40 MB of routing data for Tallinn and Harjumaa into
+`deploy/brouter/segments/` and skips files that are already there on repeat
+runs.
+
+### Running
+
+Start the full stack (brouter + postgres + backend):
+
+```sh
+docker compose up -d --build
+```
+
+Or just brouter on its own (useful when running the backend from the IDE):
+
+```sh
+docker compose up -d brouter
+```
+
+Once running, you can reach the engine at `http://localhost:17777/brouter`.
+Quick sanity check (a short route through central Tallinn):
+
+```sh
+curl 'http://localhost:17777/brouter?lonlats=24.753,59.436|24.757,59.455&profile=trekking&alternativeidx=0&format=geojson'
+```
+
+### Profiles
+
+Four stock routing profiles ship in `deploy/brouter/profiles/`:
+`trekking.brf`, `fastbike.brf`, `safety.brf`, `gravel.brf`. These are
+unmodified copies from BRouter v1.7.8. A follow-up ticket will customise
+them for Tallinn conditions.
+
 ## Tests
 Run all tests:
 

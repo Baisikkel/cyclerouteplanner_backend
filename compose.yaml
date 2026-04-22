@@ -19,6 +19,29 @@ services:
       timeout: 5s
       retries: 5
 
+  # BRouter bicycle routing engine (self-hosted). The backend calls this
+  # service to plan cycling routes. Build context and map data live in
+  # deploy/brouter/ — map data must be downloaded once with
+  # ./deploy/brouter/fetch-segments.sh before the container can answer.
+  brouter:
+    build:
+      context: ./deploy/brouter
+    container_name: "brouter"
+    restart: unless-stopped
+    ports:
+      # Exposed on the host so developers running the backend from their
+      # IDE (outside docker) can still reach the engine at localhost:17777.
+      - "17777:17777"
+    volumes:
+      - ./deploy/brouter/profiles:/profiles
+      - ./deploy/brouter/segments:/segments
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 17777 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
   # Spring Boot backend service (development stage: source mount + Maven).
   backend:
     build:
@@ -48,8 +71,12 @@ services:
       GEO_TALLINN_SOURCE_LAYER: "${GEO_TALLINN_SOURCE_LAYER:-tallinn_open_data}"
       GEO_TALLINN_FEATURE_ID_PROPERTY: "${GEO_TALLINN_FEATURE_ID_PROPERTY:-id}"
       GEO_TALLINN_FEATURE_NAME_PROPERTY: "${GEO_TALLINN_FEATURE_NAME_PROPERTY:-name}"
+      # Inside the docker network, brouter is reachable at http://brouter:17777.
+      ROUTING_BROUTER_BASE_URL: "${ROUTING_BROUTER_BASE_URL:-http://brouter:17777/brouter}"
     depends_on:
       postgres:
+        condition: service_healthy
+      brouter:
         condition: service_healthy
 
 # Persistent volume for database data

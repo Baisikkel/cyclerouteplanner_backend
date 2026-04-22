@@ -1,0 +1,5 @@
+# lookups.dat is a small brouter data file that must match the exact
+# brouter engine version. The brouter container copies it into this
+# folder on first start (see deploy/brouter/entrypoint.sh), so we never
+# commit it — otherwise it would go stale when the engine is updated.
+lookups.dat
