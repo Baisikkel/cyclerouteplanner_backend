@@ -86,8 +86,12 @@ Dev-only endpoints (`API_DEV_ENDPOINTS_ENABLED=true`):
 
 The backend uses [BRouter](https://github.com/abrensch/brouter) to plan
 cycling routes. We run our own copy in a container so we do not depend on
-the public brouter.de service. See `deploy/brouter/` for the Dockerfile,
+the public brouter.de service. See `brouter/` for the Dockerfile,
 entrypoint script, routing profiles, and the map data folder.
+
+Production deployment is managed in the
+[cyclerouteplanner-infra](https://github.com/Baisikkel/cyclerouteplanner-infra)
+repo — this copy is for local development only.
 
 ### First-time setup (once per machine)
 
@@ -95,11 +99,11 @@ Map data files are too large to keep in git — download them with the
 bundled script, run from the backend repo root:
 
 ```sh
-./deploy/brouter/fetch-segments.sh
+./brouter/fetch-segments.sh
 ```
 
 This downloads ~40 MB of routing data for Tallinn and Harjumaa into
-`deploy/brouter/segments/` and skips files that are already there on repeat
+`brouter/segments/` and skips files that are already there on repeat
 runs.
 
 ### Running
@@ -125,10 +129,8 @@ curl 'http://localhost:17777/brouter?lonlats=24.753,59.436|24.757,59.455&profile
 
 ### Profiles
 
-Four stock routing profiles ship in `deploy/brouter/profiles/`:
-`trekking.brf`, `fastbike.brf`, `safety.brf`, `gravel.brf`. These are
-unmodified copies from BRouter v1.7.8. A follow-up ticket will customise
-them for Tallinn conditions.
+Four stock routing profiles ship in `brouter/profiles/`:
+`trekking.brf`, `fastbike.brf`, `safety.brf`, `gravel.brf`.
 
 ## Tests
 Run all tests:
