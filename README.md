@@ -161,6 +161,20 @@ Auto-download settings:
 - `BROUTER_PLANET_AUTO_DOWNLOAD` (default `true`)
 - `BROUTER_PLANET_DOWNLOAD_URL` (default `https://download.geofabrik.de/europe/estonia-latest.osm.pbf`)
 
+### Routing Automation
+
+The backend now supports non-blocking routing-prep automation:
+- On startup (enabled by default), it checks whether active routing edges and pseudo-tag export exist.
+- If missing, it runs background prepare: rebuild routing edges -> export pseudo-tags -> refresh route options.
+- This does not block the API startup, but full routing quality depends on data/build readiness.
+
+Optional maintenance scheduler (disabled by default):
+- `GEO_ROUTING_AUTOMATION_SCHEDULER_ENABLED`
+- `GEO_ROUTING_AUTOMATION_SCHEDULER_CRON`
+- `GEO_ROUTING_AUTOMATION_SCHEDULER_OSM_REFRESH_ENABLED`
+- `GEO_ROUTING_AUTOMATION_SCHEDULER_TALLINN_REFRESH_ENABLED`
+- `GEO_ROUTING_AUTOMATION_REFRESH_ROUTE_OPTIONS_AFTER_PREPARE`
+
 ### Running
 
 Start the full stack (brouter + postgres + backend):

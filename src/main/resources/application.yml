@@ -58,6 +58,13 @@ geo:
   routing-edges:
     export-output-path: ${GEO_ROUTING_EDGES_EXPORT_OUTPUT_PATH:brouter/build-input/routing_edges.geojson}
     export-pseudo-tags-output-path: ${GEO_ROUTING_EDGES_EXPORT_PSEUDO_TAGS_OUTPUT_PATH:brouter/build-input/db_tags.csv.gz}
+  routing-automation:
+    bootstrap-enabled: ${GEO_ROUTING_AUTOMATION_BOOTSTRAP_ENABLED:true}
+    scheduler-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_ENABLED:false}
+    scheduler-cron: ${GEO_ROUTING_AUTOMATION_SCHEDULER_CRON:0 30 2 * * *}
+    scheduler-osm-refresh-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_OSM_REFRESH_ENABLED:false}
+    scheduler-tallinn-refresh-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_TALLINN_REFRESH_ENABLED:false}
+    refresh-route-options-after-prepare: ${GEO_ROUTING_AUTOMATION_REFRESH_ROUTE_OPTIONS_AFTER_PREPARE:true}
 
 routing:
   brouter:
