@@ -54,6 +54,7 @@ Run these in this order after backend is up:
 Invoke-RestMethod -Method Post "http://localhost:8080/api/address/cache/refresh?query=Tallinn&limit=100"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/osm/refresh"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/tallinn/refresh"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/routes/options/refresh"
 ```
 
 Check ingest result:
@@ -65,6 +66,10 @@ Invoke-RestMethod "http://localhost:8080/api/geo/cache/status"
 Optional source connectivity checks:
 - `GET /api/address/connectivity`
 - `GET /api/osm/connectivity`
+
+Route option endpoints:
+- `POST /api/routes/options/refresh` (builds OSM-first options and enriches with Tallinn overlap where available)
+- `GET /api/routes/options?limit=100`
 
 Dev-only endpoints (`API_DEV_ENDPOINTS_ENABLED=true`):
 - `POST /api/geo/cache/osm/ingest`
