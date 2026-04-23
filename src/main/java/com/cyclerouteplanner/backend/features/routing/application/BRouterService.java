@@ -30,12 +30,16 @@ public class BRouterService {
     }
 
     public String getRoute(double startLat, double startLon, double endLat, double endLon) {
+        return getRoute(startLat, startLon, endLat, endLon, "trekking");
+    }
+
+    public String getRoute(double startLat, double startLon, double endLat, double endLon, String profile) {
         String lonlats = startLon + "," + startLat + "|" + endLon + "," + endLat;
 
         return brouterRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("lonlats", lonlats)
-                        .queryParam("profile", "fastbike")
+                        .queryParam("profile", profile)
                         .queryParam("alternativeidx", 0)
                         .queryParam("format", "geojson")
                         .build())
