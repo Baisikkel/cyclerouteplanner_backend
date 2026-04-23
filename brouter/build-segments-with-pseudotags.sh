@@ -18,6 +18,8 @@ set -eu
 
 BROUTER_HOME="${BROUTER_HOME:-/opt/brouter}"
 PLANET_FILE="${PLANET_FILE:-/planet/estonia-latest.osm.pbf}"
+PLANET_AUTO_DOWNLOAD="${PLANET_AUTO_DOWNLOAD:-true}"
+PLANET_DOWNLOAD_URL="${PLANET_DOWNLOAD_URL:-https://download.geofabrik.de/europe/estonia-latest.osm.pbf}"
 PSEUDO_TAGS_FILE="${PSEUDO_TAGS_FILE:-/build-input/db_tags.csv.gz}"
 OUTPUT_SEGMENTS_DIR="${OUTPUT_SEGMENTS_DIR:-/segments}"
 WORK_DIR="${WORK_DIR:-/tmp/brouter-mapcreation}"
@@ -31,9 +33,41 @@ PROFILE_TREKKING="${PROFILE_TREKKING:-${BROUTER_HOME}/profiles2/trekking.brf}"
 PROFILE_SOFTACCESS="${PROFILE_SOFTACCESS:-${BROUTER_HOME}/profiles2/softaccess.brf}"
 BROUTER_JAR="${BROUTER_JAR:-${BROUTER_HOME}/brouter.jar}"
 
+is_true() {
+  case "$1" in
+    true|TRUE|True|1|yes|YES|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 if [ ! -f "${PLANET_FILE}" ]; then
-  echo "[segment-build] ERROR: PLANET_FILE not found: ${PLANET_FILE}" >&2
-  exit 1
+  if is_true "${PLANET_AUTO_DOWNLOAD}"; then
+    if [ -z "${PLANET_DOWNLOAD_URL}" ]; then
+      echo "[segment-build] ERROR: PLANET_FILE missing and PLANET_DOWNLOAD_URL is empty" >&2
+      exit 1
+    fi
+    if ! command -v curl >/dev/null 2>&1; then
+      echo "[segment-build] ERROR: PLANET_FILE missing and curl is not available for auto-download" >&2
+      exit 1
+    fi
+
+    PLANET_DIR="$(dirname "${PLANET_FILE}")"
+    PLANET_TMP_FILE="${PLANET_FILE}.download"
+    mkdir -p "${PLANET_DIR}"
+
+    echo "[segment-build] PLANET_FILE not found, downloading from ${PLANET_DOWNLOAD_URL}"
+    if ! curl -fL --retry 3 --retry-delay 2 -o "${PLANET_TMP_FILE}" "${PLANET_DOWNLOAD_URL}"; then
+      rm -f "${PLANET_TMP_FILE}"
+      echo "[segment-build] ERROR: failed to download PLANET_FILE from ${PLANET_DOWNLOAD_URL}" >&2
+      exit 1
+    fi
+    mv -f "${PLANET_TMP_FILE}" "${PLANET_FILE}"
+    echo "[segment-build] downloaded PLANET_FILE to ${PLANET_FILE}"
+  else
+    echo "[segment-build] ERROR: PLANET_FILE not found: ${PLANET_FILE}" >&2
+    echo "[segment-build] Set PLANET_AUTO_DOWNLOAD=true or provide PLANET_FILE manually." >&2
+    exit 1
+  fi
 fi
 if [ ! -f "${PSEUDO_TAGS_FILE}" ]; then
   echo "[segment-build] ERROR: PSEUDO_TAGS_FILE not found: ${PSEUDO_TAGS_FILE}" >&2

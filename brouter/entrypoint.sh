@@ -5,7 +5,7 @@
 #   1. Make sure /profiles/lookups.dat exists. This is a small data file
 #      that brouter needs next to every .brf routing profile (it tells
 #      brouter how to read OpenStreetMap tag data). We do not commit it
-#      to git because it must match the exact brouter engine version —
+#      to git because it must match the exact brouter engine version -
 #      the image ships with the right copy, and we put it in place here
 #      on first startup.
 #   2. Launch the brouter routing server.
@@ -19,7 +19,7 @@ if [ ! -f /profiles/lookups.dat ]; then
   cp "${BROUTER_HOME}/profiles2/lookups.dat" /profiles/lookups.dat
 fi
 
-# Safety check — if /profiles has no .brf files, someone forgot to
+# Safety check - if /profiles has no .brf files, someone forgot to
 # attach the deploy/brouter/profiles/ folder to this container.
 if ! ls /profiles/*.brf >/dev/null 2>&1; then
   echo "[brouter-entrypoint] ERROR: no .brf files found in /profiles" >&2

@@ -27,6 +27,9 @@ services:
       context: ./brouter
     container_name: "brouter"
     restart: unless-stopped
+    environment:
+      PLANET_AUTO_DOWNLOAD: "${BROUTER_PLANET_AUTO_DOWNLOAD:-true}"
+      PLANET_DOWNLOAD_URL: "${BROUTER_PLANET_DOWNLOAD_URL:-https://download.geofabrik.de/europe/estonia-latest.osm.pbf}"
     ports:
       # Exposed on the host so developers running the backend from their
       # IDE (outside docker) can still reach the engine at localhost:17777.

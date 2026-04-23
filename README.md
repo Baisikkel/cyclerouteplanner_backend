@@ -139,8 +139,9 @@ Pseudo-tags output path can be overridden with:
 
 To rebuild local `.rd5` segments with merged-edge pseudo-tags:
 
-1. Put a base OSM extract at:
+1. Optional: place a base OSM extract at:
    `brouter/planet/estonia-latest.osm.pbf`
+   (if missing, the build script auto-downloads from Geofabrik by default)
 2. Rebuild merged routing edges and export pseudo-tags:
 
 ```powershell
@@ -154,6 +155,11 @@ docker compose run --rm --entrypoint /usr/local/bin/build-segments-with-pseudota
 ```
 
 The script writes generated `.rd5` files into `brouter/segments/`.
+If `PLANET_FILE` is missing and auto-download fails, the script exits with an explicit error.
+
+Auto-download settings:
+- `BROUTER_PLANET_AUTO_DOWNLOAD` (default `true`)
+- `BROUTER_PLANET_DOWNLOAD_URL` (default `https://download.geofabrik.de/europe/estonia-latest.osm.pbf`)
 
 ### Running
 
