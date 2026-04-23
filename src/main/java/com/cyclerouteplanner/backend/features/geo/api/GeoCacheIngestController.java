@@ -3,6 +3,7 @@ package com.cyclerouteplanner.backend.features.geo.api;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheIngestResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgeBuildResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgeExportResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgePrepareResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgeStatusResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheStatusResponse;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Instant;
 
 @RestController
 @Profile({"local", "docker"})
@@ -101,6 +104,63 @@ public class GeoCacheIngestController {
                 status.checkedAt()
         );
         if (status.successful()) {
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @PostMapping("/routing-edges/export-pseudo-tags")
+    public ResponseEntity<GeoRoutingEdgeExportResponse> exportRoutingEdgePseudoTags() {
+        GeoRoutingEdgeExportStatus status = geoRoutingEdgeBuildService.exportPseudoTagsForSegmentBuild();
+        GeoRoutingEdgeExportResponse response = new GeoRoutingEdgeExportResponse(
+                status.source(),
+                status.successful(),
+                status.exportedCount(),
+                status.outputPath(),
+                status.details(),
+                status.checkedAt()
+        );
+        if (status.successful()) {
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @PostMapping("/routing-edges/rebuild-and-export-pseudo-tags")
+    public ResponseEntity<GeoRoutingEdgePrepareResponse> rebuildRoutingEdgesAndExportPseudoTags() {
+        GeoRoutingEdgeBuildStatus buildStatus = geoRoutingEdgeBuildService.rebuildFromGeoCaches();
+        GeoRoutingEdgeExportStatus exportStatus;
+
+        if (buildStatus.successful()) {
+            exportStatus = geoRoutingEdgeBuildService.exportPseudoTagsForSegmentBuild();
+        } else {
+            exportStatus = new GeoRoutingEdgeExportStatus(
+                    false,
+                    "routing_edge_cache_pseudo_tags",
+                    0,
+                    null,
+                    "Skipped pseudo-tag export because routing edge rebuild failed",
+                    Instant.now()
+            );
+        }
+
+        boolean successful = buildStatus.successful() && exportStatus.successful();
+        GeoRoutingEdgePrepareResponse response = new GeoRoutingEdgePrepareResponse(
+                "routing_edge_cache_prepare",
+                successful,
+                buildStatus.osmUpsertedCount(),
+                buildStatus.osmPlusTallinnUpsertedCount(),
+                buildStatus.tallinnOnlyUpsertedCount(),
+                buildStatus.totalUpsertedCount(),
+                exportStatus.exportedCount(),
+                exportStatus.outputPath(),
+                successful
+                        ? "Routing edge rebuild and pseudo-tag export completed"
+                        : "Routing edge rebuild and pseudo-tag export failed",
+                exportStatus.checkedAt()
+        );
+
+        if (successful) {
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);

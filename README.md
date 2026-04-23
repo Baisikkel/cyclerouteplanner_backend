@@ -54,7 +54,7 @@ Run these in this order after backend is up:
 Invoke-RestMethod -Method Post "http://localhost:8080/api/address/cache/refresh?query=Tallinn&limit=100"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/osm/refresh"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/tallinn/refresh"
-Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/rebuild"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/rebuild-and-export-pseudo-tags"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/export"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/routes/options/refresh"
 ```
@@ -73,8 +73,10 @@ Optional source connectivity checks:
 - `GET /api/osm/connectivity`
 - `GET /api/geo/cache/routing-audit` (core routing readiness for merged OSM + Tallinn graph build)
 - `POST /api/geo/cache/routing-edges/rebuild` (builds merged routing-edge cache from OSM + optional Tallinn overlap)
+- `POST /api/geo/cache/routing-edges/rebuild-and-export-pseudo-tags` (core prep for BRouter map creation: rebuild + pseudo-tag export)
 - `GET /api/geo/cache/routing-edges/status`
 - `POST /api/geo/cache/routing-edges/export` (writes active merged edges to BRouter build input GeoJSON)
+- `POST /api/geo/cache/routing-edges/export-pseudo-tags` (writes active merged-edge pseudo-tags for BRouter map creation)
 
 Route option endpoints:
 - `POST /api/routes/options/refresh` (builds OSM-first options and enriches with Tallinn overlap where available)
@@ -128,6 +130,30 @@ By default the backend writes the file to:
 Override path with:
 
 `GEO_ROUTING_EDGES_EXPORT_OUTPUT_PATH`
+
+Pseudo-tags output path can be overridden with:
+
+`GEO_ROUTING_EDGES_EXPORT_PSEUDO_TAGS_OUTPUT_PATH`
+
+### Segment Build With Pseudo-Tags
+
+To rebuild local `.rd5` segments with merged-edge pseudo-tags:
+
+1. Put a base OSM extract at:
+   `brouter/planet/estonia-latest.osm.pbf`
+2. Rebuild merged routing edges and export pseudo-tags:
+
+```powershell
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/rebuild-and-export-pseudo-tags"
+```
+
+3. Run map creation inside the brouter container:
+
+```powershell
+docker compose run --rm --entrypoint /usr/local/bin/build-segments-with-pseudotags.sh -e PLANET_FILE=/planet/estonia-latest.osm.pbf brouter
+```
+
+The script writes generated `.rd5` files into `brouter/segments/`.
 
 ### Running
 

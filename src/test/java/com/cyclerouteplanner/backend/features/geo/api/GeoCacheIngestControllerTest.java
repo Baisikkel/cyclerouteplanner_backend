@@ -171,6 +171,74 @@ class GeoCacheIngestControllerTest {
     }
 
     @Test
+    void exportRoutingEdgePseudoTagsReturnsOutputPathAndCount() throws Exception {
+        GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
+        GeoRoutingEdgeBuildService routingEdgeBuildService = mock(GeoRoutingEdgeBuildService.class);
+        OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
+        TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new GeoCacheIngestController(statusService, routingAuditService, routingEdgeBuildService, refreshService, tallinnRefreshService)
+        ).build();
+
+        when(routingEdgeBuildService.exportPseudoTagsForSegmentBuild()).thenReturn(new GeoRoutingEdgeExportStatus(
+                true,
+                "routing_edge_cache_pseudo_tags",
+                420,
+                "C:/repo/brouter/build-input/db_tags.csv.gz",
+                "Routing edge pseudo-tag export completed",
+                Instant.parse("2026-04-23T00:00:00Z")
+        ));
+
+        mockMvc.perform(post("/api/geo/cache/routing-edges/export-pseudo-tags"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("routing_edge_cache_pseudo_tags"))
+                .andExpect(jsonPath("$.exportedCount").value(420))
+                .andExpect(jsonPath("$.outputPath").value("C:/repo/brouter/build-input/db_tags.csv.gz"));
+    }
+
+    @Test
+    void rebuildAndExportPseudoTagsReturnsCombinedStatus() throws Exception {
+        GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
+        GeoRoutingEdgeBuildService routingEdgeBuildService = mock(GeoRoutingEdgeBuildService.class);
+        OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
+        TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new GeoCacheIngestController(statusService, routingAuditService, routingEdgeBuildService, refreshService, tallinnRefreshService)
+        ).build();
+
+        when(routingEdgeBuildService.rebuildFromGeoCaches()).thenReturn(new GeoRoutingEdgeBuildStatus(
+                true,
+                "osm_with_optional_tallinn_merge",
+                500,
+                210,
+                80,
+                580,
+                "Routing edge rebuild completed",
+                Instant.parse("2026-04-23T00:00:00Z")
+        ));
+        when(routingEdgeBuildService.exportPseudoTagsForSegmentBuild()).thenReturn(new GeoRoutingEdgeExportStatus(
+                true,
+                "routing_edge_cache_pseudo_tags",
+                420,
+                "C:/repo/brouter/build-input/db_tags.csv.gz",
+                "Routing edge pseudo-tag export completed",
+                Instant.parse("2026-04-23T00:00:01Z")
+        ));
+
+        mockMvc.perform(post("/api/geo/cache/routing-edges/rebuild-and-export-pseudo-tags"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("routing_edge_cache_prepare"))
+                .andExpect(jsonPath("$.osmUpsertedCount").value(500))
+                .andExpect(jsonPath("$.osmPlusTallinnUpsertedCount").value(210))
+                .andExpect(jsonPath("$.tallinnOnlyUpsertedCount").value(80))
+                .andExpect(jsonPath("$.totalUpsertedCount").value(580))
+                .andExpect(jsonPath("$.pseudoTagsExportedCount").value(420))
+                .andExpect(jsonPath("$.pseudoTagsOutputPath").value("C:/repo/brouter/build-input/db_tags.csv.gz"));
+    }
+
+    @Test
     void refreshOsmReturnsOk() throws Exception {
         GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
         GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);

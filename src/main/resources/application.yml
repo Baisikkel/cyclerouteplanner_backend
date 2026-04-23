@@ -57,6 +57,7 @@ geo:
       tallinn-enabled: ${GEO_REFRESH_SCHEDULER_TALLINN_ENABLED:true}
   routing-edges:
     export-output-path: ${GEO_ROUTING_EDGES_EXPORT_OUTPUT_PATH:brouter/build-input/routing_edges.geojson}
+    export-pseudo-tags-output-path: ${GEO_ROUTING_EDGES_EXPORT_PSEUDO_TAGS_OUTPUT_PATH:brouter/build-input/db_tags.csv.gz}
 
 routing:
   brouter:

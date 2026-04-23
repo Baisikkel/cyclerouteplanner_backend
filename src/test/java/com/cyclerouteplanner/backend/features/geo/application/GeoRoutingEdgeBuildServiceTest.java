@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -154,9 +155,74 @@ class GeoRoutingEdgeBuildServiceTest {
         assertTrue(exported.contains("\"sourceKey\":\"tallinn:lane:200\""));
     }
 
+    @Test
+    void exportPseudoTagsForSegmentBuildWritesBrouterCompatibleCsvGz() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        doAnswer(invocation -> {
+            RowCallbackHandler callback = invocation.getArgument(1);
+
+            ResultSet row1 = mock(ResultSet.class);
+            when(row1.getString("osm_source_id")).thenReturn("way/101");
+            when(row1.getString("merge_type")).thenReturn("osm_plus_tallinn");
+            when(row1.getString("profile_hint")).thenReturn("safety");
+            when(row1.getDouble("quality_score")).thenReturn(0.91d);
+
+            ResultSet row2 = mock(ResultSet.class);
+            when(row2.getString("osm_source_id")).thenReturn("way/102");
+            when(row2.getString("merge_type")).thenReturn("osm_plus_tallinn");
+            when(row2.getString("profile_hint")).thenReturn("fastbike");
+            when(row2.getDouble("quality_score")).thenReturn(0.80d);
+
+            ResultSet row3 = mock(ResultSet.class);
+            when(row3.getString("osm_source_id")).thenReturn("way/999");
+            when(row3.getString("merge_type")).thenReturn("osm");
+            when(row3.getString("profile_hint")).thenReturn("fastbike");
+            when(row3.getDouble("quality_score")).thenReturn(0.60d);
+
+            callback.processRow(row1);
+            callback.processRow(row2);
+            callback.processRow(row3);
+            return null;
+        }).when(jdbcTemplate).query(any(String.class), any(RowCallbackHandler.class));
+
+        DataSnapshotPort snapshotPort = new DataSnapshotPort() {
+            @Override
+            public DataSnapshotRecord upsert(String source, String sourceVersion, Instant sourceTimestamp, String checksum, Map<String, Object> metadata) {
+                return new DataSnapshotRecord(source, sourceVersion, sourceTimestamp, checksum, metadata, Instant.now());
+            }
+
+            @Override
+            public List<DataSnapshotRecord> findLatest(int limit) {
+                return List.of();
+            }
+        };
+
+        Path tempDirectory = Files.createTempDirectory("routing-edge-pseudotag-export-test");
+        Path exportPath = tempDirectory.resolve("db_tags.csv.gz");
+        GeoRoutingEdgeProperties properties = defaultProperties("brouter/build-input/routing_edges.geojson");
+        properties.setExportPseudoTagsOutputPath(exportPath.toString());
+        GeoRoutingEdgeBuildService service = new GeoRoutingEdgeBuildService(jdbcTemplate, snapshotPort, properties);
+
+        GeoRoutingEdgeExportStatus status = service.exportPseudoTagsForSegmentBuild();
+        String exported = readGzipString(exportPath);
+
+        assertTrue(status.successful());
+        assertEquals(2, status.exportedCount());
+        assertTrue(exported.contains("#####waytags#####"));
+        assertTrue(exported.contains("101;1;;;;1"));
+        assertTrue(exported.contains("102;2;;;;2"));
+    }
+
     private GeoRoutingEdgeProperties defaultProperties(String outputPath) {
         GeoRoutingEdgeProperties properties = new GeoRoutingEdgeProperties();
         properties.setExportOutputPath(outputPath);
+        properties.setExportPseudoTagsOutputPath("brouter/build-input/db_tags.csv.gz");
         return properties;
+    }
+
+    private String readGzipString(Path gzPath) throws Exception {
+        try (GZIPInputStream gzipInputStream = new GZIPInputStream(Files.newInputStream(gzPath))) {
+            return new String(gzipInputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 }

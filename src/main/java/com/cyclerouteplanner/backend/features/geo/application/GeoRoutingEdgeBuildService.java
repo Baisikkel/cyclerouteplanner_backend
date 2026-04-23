@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,9 +21,11 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPOutputStream;
 
 @Service
 @Profile({"local", "docker"})
@@ -31,6 +34,7 @@ public class GeoRoutingEdgeBuildService {
     private static final String SNAPSHOT_SOURCE = "routing_edges";
     private static final String STATUS_SOURCE = "osm_with_optional_tallinn_merge";
     private static final String EXPORT_SOURCE = "routing_edge_cache";
+    private static final String EXPORT_PSEUDO_TAGS_SOURCE = "routing_edge_cache_pseudo_tags";
 
     private static final String REBUILD_SQL = """
             with deactivated as (
@@ -267,6 +271,18 @@ public class GeoRoutingEdgeBuildService {
             order by id asc
             """;
 
+    private static final String EXPORT_PSEUDO_TAGS_SQL = """
+            select
+                osm_source_id,
+                merge_type,
+                profile_hint,
+                quality_score
+            from geo.routing_edge_cache
+            where active = true
+              and osm_source_id is not null
+            order by id asc
+            """;
+
     private final JdbcTemplate jdbcTemplate;
     private final DataSnapshotPort dataSnapshotPort;
     private final GeoRoutingEdgeProperties geoRoutingEdgeProperties;
@@ -438,6 +454,126 @@ public class GeoRoutingEdgeBuildService {
         }
     }
 
+    public GeoRoutingEdgeExportStatus exportPseudoTagsForSegmentBuild() {
+        String configuredPath = geoRoutingEdgeProperties.getExportPseudoTagsOutputPath();
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return new GeoRoutingEdgeExportStatus(
+                    false,
+                    EXPORT_PSEUDO_TAGS_SOURCE,
+                    0,
+                    null,
+                    "Missing geo.routing-edges.export-pseudo-tags-output-path configuration",
+                    Instant.now()
+            );
+        }
+
+        Path outputPath = Path.of(configuredPath).toAbsolutePath().normalize();
+        Path tempPath = outputPath.resolveSibling(outputPath.getFileName() + ".tmp");
+        Map<Long, PseudoTagRow> rowsByOsmWayId = new LinkedHashMap<>();
+
+        try {
+            Path parent = outputPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            jdbcTemplate.query(EXPORT_PSEUDO_TAGS_SQL, rs -> {
+                Long osmWayId = extractOsmWayId(rs.getString("osm_source_id"));
+                if (osmWayId == null) {
+                    return;
+                }
+
+                String mergeType = rs.getString("merge_type");
+                double qualityScore = rs.getDouble("quality_score");
+                String profileHint = rs.getString("profile_hint");
+
+                String trafficClass = null;
+                String noiseClass = null;
+                if ("osm_plus_tallinn".equals(mergeType)) {
+                    if (qualityScore >= 0.9d) {
+                        trafficClass = "1";
+                    } else if (qualityScore >= 0.75d) {
+                        trafficClass = "2";
+                    } else {
+                        trafficClass = "3";
+                    }
+                    noiseClass = "safety".equals(profileHint) ? "1" : "2";
+                }
+
+                if (trafficClass == null && noiseClass == null) {
+                    return;
+                }
+
+                PseudoTagRow existing = rowsByOsmWayId.get(osmWayId);
+                if (existing == null) {
+                    rowsByOsmWayId.put(osmWayId, new PseudoTagRow(noiseClass, null, null, null, trafficClass));
+                } else {
+                    rowsByOsmWayId.put(
+                            osmWayId,
+                            new PseudoTagRow(
+                                    minPseudoClass(existing.noiseClass(), noiseClass),
+                                    minPseudoClass(existing.riverClass(), null),
+                                    minPseudoClass(existing.forestClass(), null),
+                                    minPseudoClass(existing.townClass(), null),
+                                    minPseudoClass(existing.trafficClass(), trafficClass)
+                            )
+                    );
+                }
+            });
+
+            try (OutputStream fileOutput = Files.newOutputStream(tempPath);
+                 OutputStream wrappedOutput = outputPath.toString().endsWith(".gz")
+                         ? new GZIPOutputStream(fileOutput)
+                         : fileOutput;
+                 BufferedWriter writer = new BufferedWriter(new java.io.OutputStreamWriter(wrappedOutput, StandardCharsets.UTF_8))) {
+                writer.write("#####waytags#####");
+                writer.newLine();
+                writer.write("losmid;noise_class;river_class;forest_class;town_class;traffic_class");
+                writer.newLine();
+
+                for (Map.Entry<Long, PseudoTagRow> entry : rowsByOsmWayId.entrySet()) {
+                    PseudoTagRow row = entry.getValue();
+                    writer.write(Long.toString(entry.getKey()));
+                    writer.write(";");
+                    writer.write(nullToEmpty(row.noiseClass()));
+                    writer.write(";");
+                    writer.write(nullToEmpty(row.riverClass()));
+                    writer.write(";");
+                    writer.write(nullToEmpty(row.forestClass()));
+                    writer.write(";");
+                    writer.write(nullToEmpty(row.townClass()));
+                    writer.write(";");
+                    writer.write(nullToEmpty(row.trafficClass()));
+                    writer.newLine();
+                }
+            }
+
+            Files.move(tempPath, outputPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            return new GeoRoutingEdgeExportStatus(
+                    true,
+                    EXPORT_PSEUDO_TAGS_SOURCE,
+                    rowsByOsmWayId.size(),
+                    outputPath.toString(),
+                    "Routing edge pseudo-tag export completed",
+                    Instant.now()
+            );
+        } catch (Exception ex) {
+            try {
+                Files.deleteIfExists(tempPath);
+            } catch (Exception ignored) {
+                // Best effort cleanup.
+            }
+            return new GeoRoutingEdgeExportStatus(
+                    false,
+                    EXPORT_PSEUDO_TAGS_SOURCE,
+                    0,
+                    outputPath.toString(),
+                    ex.getMessage(),
+                    Instant.now()
+            );
+        }
+    }
+
     private int asInt(Object value) {
         if (value instanceof Number number) {
             return number.intValue();
@@ -489,5 +625,47 @@ public class GeoRoutingEdgeBuildService {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    private Long extractOsmWayId(String osmSourceId) {
+        if (osmSourceId == null || osmSourceId.isBlank()) {
+            return null;
+        }
+        int slashIndex = osmSourceId.lastIndexOf('/');
+        String numericPart = slashIndex >= 0 ? osmSourceId.substring(slashIndex + 1) : osmSourceId;
+        try {
+            return Long.parseLong(numericPart);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String minPseudoClass(String current, String candidate) {
+        if (candidate == null || candidate.isBlank()) {
+            return current;
+        }
+        if (current == null || current.isBlank()) {
+            return candidate;
+        }
+        try {
+            int currentValue = Integer.parseInt(current);
+            int candidateValue = Integer.parseInt(candidate);
+            return Integer.toString(Math.min(currentValue, candidateValue));
+        } catch (NumberFormatException ex) {
+            return current;
+        }
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private record PseudoTagRow(
+            String noiseClass,
+            String riverClass,
+            String forestClass,
+            String townClass,
+            String trafficClass
+    ) {
     }
 }

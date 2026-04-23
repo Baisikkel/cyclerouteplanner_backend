@@ -51,7 +51,8 @@ RUN apk add --no-cache --virtual .build-deps curl unzip \
 RUN mkdir -p /segments /profiles /build-input /customprofiles
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY build-segments-with-pseudotags.sh /usr/local/bin/build-segments-with-pseudotags.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/build-segments-with-pseudotags.sh
 
 EXPOSE 17777
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

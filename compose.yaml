@@ -35,6 +35,9 @@ services:
       - ./brouter/profiles:/profiles
       - ./brouter/segments:/segments
       - ./brouter/build-input:/build-input
+      - ./brouter/planet:/planet
+      - ./brouter/srtm1_bef:/srtm1_bef
+      - ./brouter/srtm3_bef:/srtm3_bef
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 17777 2>/dev/null || exit 1"]
       interval: 10s
