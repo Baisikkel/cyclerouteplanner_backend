@@ -2,6 +2,7 @@ package com.cyclerouteplanner.backend.features.geo.api;
 
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheIngestResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgeBuildResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgeExportResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingEdgeStatusResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheStatusResponse;
@@ -12,6 +13,7 @@ import com.cyclerouteplanner.backend.features.geo.application.OsmGeoRefreshServi
 import com.cyclerouteplanner.backend.features.geo.application.TallinnGeoRefreshService;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoCacheIngestStatus;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeBuildStatus;
+import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeExportStatus;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeStatus;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -85,6 +87,23 @@ public class GeoCacheIngestController {
                 status.activeOsmPlusTallinnCount(),
                 status.activeTallinnOnlyCount()
         ));
+    }
+
+    @PostMapping("/routing-edges/export")
+    public ResponseEntity<GeoRoutingEdgeExportResponse> exportRoutingEdges() {
+        GeoRoutingEdgeExportStatus status = geoRoutingEdgeBuildService.exportActiveEdgesToBrouterInput();
+        GeoRoutingEdgeExportResponse response = new GeoRoutingEdgeExportResponse(
+                status.source(),
+                status.successful(),
+                status.exportedCount(),
+                status.outputPath(),
+                status.details(),
+                status.checkedAt()
+        );
+        if (status.successful()) {
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     @PostMapping("/osm/refresh")

@@ -45,9 +45,10 @@ RUN apk add --no-cache --virtual .build-deps curl unzip \
 # paths so brouter can read them:
 #   /segments       -> map data files (.rd5) from fetch-segments.sh
 #   /profiles       -> routing profiles (.brf) from deploy/brouter/profiles/
+#   /build-input    -> exported merged OSM+Tallinn edges from backend
 #   /customprofiles -> empty for now; reserved for a future feature where
 #                      the frontend sends custom routing rules per request
-RUN mkdir -p /segments /profiles /customprofiles
+RUN mkdir -p /segments /profiles /build-input /customprofiles
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

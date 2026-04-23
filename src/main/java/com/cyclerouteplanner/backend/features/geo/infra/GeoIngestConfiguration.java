@@ -4,6 +4,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties({GeoIngestProperties.class, GeoRefreshSchedulerProperties.class})
+@EnableConfigurationProperties({GeoIngestProperties.class, GeoRefreshSchedulerProperties.class, GeoRoutingEdgeProperties.class})
 public class GeoIngestConfiguration {
 }

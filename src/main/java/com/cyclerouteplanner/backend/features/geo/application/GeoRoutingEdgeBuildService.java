@@ -1,16 +1,28 @@
 package com.cyclerouteplanner.backend.features.geo.application;
 
 import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeBuildStatus;
+import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeExportStatus;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeStatus;
+import com.cyclerouteplanner.backend.features.geo.infra.GeoRoutingEdgeProperties;
 import com.cyclerouteplanner.backend.features.ingest.domain.DataSnapshotPort;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Profile({"local", "docker"})
@@ -18,6 +30,7 @@ public class GeoRoutingEdgeBuildService {
 
     private static final String SNAPSHOT_SOURCE = "routing_edges";
     private static final String STATUS_SOURCE = "osm_with_optional_tallinn_merge";
+    private static final String EXPORT_SOURCE = "routing_edge_cache";
 
     private static final String REBUILD_SQL = """
             with deactivated as (
@@ -238,12 +251,34 @@ public class GeoRoutingEdgeBuildService {
             from geo.routing_edge_cache
             """;
 
+    private static final String EXPORT_SQL = """
+            select
+                source_key,
+                origin_source,
+                osm_source_id,
+                tallinn_source_id,
+                profile_hint,
+                merge_type,
+                quality_score,
+                ST_AsGeoJSON(geom, 6) as geom_geojson,
+                metadata::text as metadata_json
+            from geo.routing_edge_cache
+            where active = true
+            order by id asc
+            """;
+
     private final JdbcTemplate jdbcTemplate;
     private final DataSnapshotPort dataSnapshotPort;
+    private final GeoRoutingEdgeProperties geoRoutingEdgeProperties;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public GeoRoutingEdgeBuildService(JdbcTemplate jdbcTemplate, DataSnapshotPort dataSnapshotPort) {
+    public GeoRoutingEdgeBuildService(
+            JdbcTemplate jdbcTemplate,
+            DataSnapshotPort dataSnapshotPort,
+            GeoRoutingEdgeProperties geoRoutingEdgeProperties) {
         this.jdbcTemplate = jdbcTemplate;
         this.dataSnapshotPort = dataSnapshotPort;
+        this.geoRoutingEdgeProperties = geoRoutingEdgeProperties;
     }
 
     public GeoRoutingEdgeBuildStatus rebuildFromGeoCaches() {
@@ -303,6 +338,106 @@ public class GeoRoutingEdgeBuildService {
         );
     }
 
+    public GeoRoutingEdgeExportStatus exportActiveEdgesToBrouterInput() {
+        String configuredPath = geoRoutingEdgeProperties.getExportOutputPath();
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return new GeoRoutingEdgeExportStatus(
+                    false,
+                    EXPORT_SOURCE,
+                    0,
+                    null,
+                    "Missing geo.routing-edges.export-output-path configuration",
+                    Instant.now()
+            );
+        }
+
+        Path outputPath = Path.of(configuredPath).toAbsolutePath().normalize();
+        Path tempPath = outputPath.resolveSibling(outputPath.getFileName() + ".tmp");
+        AtomicInteger exportedCount = new AtomicInteger(0);
+        AtomicBoolean firstFeature = new AtomicBoolean(true);
+
+        try {
+            Path parent = outputPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            try (BufferedWriter writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
+                writer.write("{\"type\":\"FeatureCollection\",\"name\":\"routing_edge_cache\",\"features\":[");
+
+                jdbcTemplate.query(EXPORT_SQL, rs -> {
+                    try {
+                        if (!firstFeature.get()) {
+                            writer.write(",");
+                        }
+                        firstFeature.set(false);
+
+                        String geometry = rs.getString("geom_geojson");
+                        String sourceKey = rs.getString("source_key");
+                        String originSource = rs.getString("origin_source");
+                        String osmSourceId = rs.getString("osm_source_id");
+                        String tallinnSourceId = rs.getString("tallinn_source_id");
+                        String profileHint = rs.getString("profile_hint");
+                        String mergeType = rs.getString("merge_type");
+                        double qualityScore = rs.getDouble("quality_score");
+                        String metadataJson = rs.getString("metadata_json");
+                        String metadata = safeJsonObject(metadataJson);
+
+                        writer.write("{\"type\":\"Feature\",\"geometry\":");
+                        writer.write(geometry == null ? "null" : geometry);
+                        writer.write(",\"properties\":{");
+                        writer.write("\"sourceKey\":\"");
+                        writer.write(escapeJson(sourceKey));
+                        writer.write("\",\"originSource\":\"");
+                        writer.write(escapeJson(originSource));
+                        writer.write("\",\"osmSourceId\":");
+                        writeNullableString(writer, osmSourceId);
+                        writer.write(",\"tallinnSourceId\":");
+                        writeNullableString(writer, tallinnSourceId);
+                        writer.write(",\"profileHint\":\"");
+                        writer.write(escapeJson(profileHint));
+                        writer.write("\",\"mergeType\":\"");
+                        writer.write(escapeJson(mergeType));
+                        writer.write("\",\"qualityScore\":");
+                        writer.write(Double.toString(qualityScore));
+                        writer.write(",\"metadata\":");
+                        writer.write(metadata);
+                        writer.write("}}");
+                        exportedCount.incrementAndGet();
+                    } catch (IOException ioException) {
+                        throw new IllegalStateException("Failed to write routing edge export file", ioException);
+                    }
+                });
+
+                writer.write("]}");
+            }
+
+            Files.move(tempPath, outputPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            return new GeoRoutingEdgeExportStatus(
+                    true,
+                    EXPORT_SOURCE,
+                    exportedCount.get(),
+                    outputPath.toString(),
+                    "Routing edge export completed",
+                    Instant.now()
+            );
+        } catch (Exception ex) {
+            try {
+                Files.deleteIfExists(tempPath);
+            } catch (Exception ignored) {
+                // Best effort cleanup.
+            }
+            return new GeoRoutingEdgeExportStatus(
+                    false,
+                    EXPORT_SOURCE,
+                    0,
+                    outputPath.toString(),
+                    ex.getMessage(),
+                    Instant.now()
+            );
+        }
+    }
+
     private int asInt(Object value) {
         if (value instanceof Number number) {
             return number.intValue();
@@ -315,5 +450,44 @@ public class GeoRoutingEdgeBuildService {
             return number.longValue();
         }
         return 0L;
+    }
+
+    private String safeJsonObject(String value) {
+        if (value == null || value.isBlank()) {
+            return "{}";
+        }
+        try {
+            JsonNode node = objectMapper.readTree(value);
+            if (!node.isObject()) {
+                return "{}";
+            }
+            return node.toString();
+        } catch (Exception ex) {
+            return "{}";
+        }
+    }
+
+    private void writeNullableString(BufferedWriter writer, String value) throws IOException {
+        if (value == null) {
+            writer.write("null");
+            return;
+        }
+        writer.write("\"");
+        writer.write(escapeJson(value));
+        writer.write("\"");
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }

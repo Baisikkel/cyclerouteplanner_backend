@@ -55,6 +55,7 @@ Invoke-RestMethod -Method Post "http://localhost:8080/api/address/cache/refresh?
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/osm/refresh"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/tallinn/refresh"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/rebuild"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/export"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/routes/options/refresh"
 ```
 
@@ -64,6 +65,7 @@ Check ingest result:
 Invoke-RestMethod "http://localhost:8080/api/geo/cache/status"
 Invoke-RestMethod "http://localhost:8080/api/geo/cache/routing-audit"
 Invoke-RestMethod "http://localhost:8080/api/geo/cache/routing-edges/status"
+Get-Item "brouter/build-input/routing_edges.geojson"
 ```
 
 Optional source connectivity checks:
@@ -72,6 +74,7 @@ Optional source connectivity checks:
 - `GET /api/geo/cache/routing-audit` (core routing readiness for merged OSM + Tallinn graph build)
 - `POST /api/geo/cache/routing-edges/rebuild` (builds merged routing-edge cache from OSM + optional Tallinn overlap)
 - `GET /api/geo/cache/routing-edges/status`
+- `POST /api/geo/cache/routing-edges/export` (writes active merged edges to BRouter build input GeoJSON)
 
 Route option endpoints:
 - `POST /api/routes/options/refresh` (builds OSM-first options and enriches with Tallinn overlap where available)
@@ -109,6 +112,22 @@ bundled script, run from the backend repo root:
 This downloads ~40 MB of routing data for Tallinn and Harjumaa into
 `brouter/segments/` and skips files that are already there on repeat
 runs.
+
+### Merged Build Input Export
+
+After rebuilding `geo.routing_edge_cache`, export merged OSM+Tallinn edges:
+
+```powershell
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/export"
+```
+
+By default the backend writes the file to:
+
+`brouter/build-input/routing_edges.geojson`
+
+Override path with:
+
+`GEO_ROUTING_EDGES_EXPORT_OUTPUT_PATH`
 
 ### Running
 

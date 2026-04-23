@@ -34,6 +34,7 @@ services:
     volumes:
       - ./brouter/profiles:/profiles
       - ./brouter/segments:/segments
+      - ./brouter/build-input:/build-input
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 17777 2>/dev/null || exit 1"]
       interval: 10s

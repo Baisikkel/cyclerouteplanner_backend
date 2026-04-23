@@ -13,6 +13,7 @@ import com.cyclerouteplanner.backend.features.geo.application.OsmGeoRefreshServi
 import com.cyclerouteplanner.backend.features.geo.application.TallinnGeoRefreshService;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoCacheIngestStatus;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeBuildStatus;
+import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeExportStatus;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoRoutingEdgeStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -141,6 +142,32 @@ class GeoCacheIngestControllerTest {
                 .andExpect(jsonPath("$.activeOsmCount").value(640))
                 .andExpect(jsonPath("$.activeOsmPlusTallinnCount").value(280))
                 .andExpect(jsonPath("$.activeTallinnOnlyCount").value(80));
+    }
+
+    @Test
+    void exportRoutingEdgesReturnsOutputPathAndCount() throws Exception {
+        GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
+        GeoRoutingEdgeBuildService routingEdgeBuildService = mock(GeoRoutingEdgeBuildService.class);
+        OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
+        TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new GeoCacheIngestController(statusService, routingAuditService, routingEdgeBuildService, refreshService, tallinnRefreshService)
+        ).build();
+
+        when(routingEdgeBuildService.exportActiveEdgesToBrouterInput()).thenReturn(new GeoRoutingEdgeExportStatus(
+                true,
+                "routing_edge_cache",
+                1000,
+                "C:/repo/brouter/build-input/routing_edges.geojson",
+                "Routing edge export completed",
+                Instant.parse("2026-04-23T00:00:00Z")
+        ));
+
+        mockMvc.perform(post("/api/geo/cache/routing-edges/export"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exportedCount").value(1000))
+                .andExpect(jsonPath("$.outputPath").value("C:/repo/brouter/build-input/routing_edges.geojson"));
     }
 
     @Test
