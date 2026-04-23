@@ -54,6 +54,7 @@ Run these in this order after backend is up:
 Invoke-RestMethod -Method Post "http://localhost:8080/api/address/cache/refresh?query=Tallinn&limit=100"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/osm/refresh"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/tallinn/refresh"
+Invoke-RestMethod -Method Post "http://localhost:8080/api/geo/cache/routing-edges/rebuild"
 Invoke-RestMethod -Method Post "http://localhost:8080/api/routes/options/refresh"
 ```
 
@@ -62,12 +63,15 @@ Check ingest result:
 ```powershell
 Invoke-RestMethod "http://localhost:8080/api/geo/cache/status"
 Invoke-RestMethod "http://localhost:8080/api/geo/cache/routing-audit"
+Invoke-RestMethod "http://localhost:8080/api/geo/cache/routing-edges/status"
 ```
 
 Optional source connectivity checks:
 - `GET /api/address/connectivity`
 - `GET /api/osm/connectivity`
 - `GET /api/geo/cache/routing-audit` (core routing readiness for merged OSM + Tallinn graph build)
+- `POST /api/geo/cache/routing-edges/rebuild` (builds merged routing-edge cache from OSM + optional Tallinn overlap)
+- `GET /api/geo/cache/routing-edges/status`
 
 Route option endpoints:
 - `POST /api/routes/options/refresh` (builds OSM-first options and enriches with Tallinn overlap where available)

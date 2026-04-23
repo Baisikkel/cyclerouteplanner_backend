@@ -49,6 +49,10 @@ class DatabaseMigrationIntegrationTest extends AbstractPostgisIntegrationTest {
                 "select count(*) from information_schema.tables where table_schema = 'geo' and table_name = 'tallinn_layer_cache'",
                 Integer.class
         );
+        Integer routingEdgeCacheTableExists = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'geo' and table_name = 'routing_edge_cache'",
+                Integer.class
+        );
         Integer routeOptionTableExists = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.tables where table_schema = 'routing' and table_name = 'route_option'",
                 Integer.class
@@ -63,6 +67,7 @@ class DatabaseMigrationIntegrationTest extends AbstractPostgisIntegrationTest {
         assertEquals(1, addressCacheTableExists);
         assertEquals(1, osmFeatureCacheTableExists);
         assertEquals(1, tallinnLayerCacheTableExists);
+        assertEquals(1, routingEdgeCacheTableExists);
         assertEquals(1, routeOptionTableExists);
     }
 }
