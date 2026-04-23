@@ -2,7 +2,12 @@ package com.cyclerouteplanner.backend.features.geo.api;
 
 import com.cyclerouteplanner.backend.features.geo.application.GeoCacheStatusService;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheSourceStatusResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditOsmResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditReadinessResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditTallinnResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheStatusResponse;
+import com.cyclerouteplanner.backend.features.geo.application.GeoRoutingAuditService;
 import com.cyclerouteplanner.backend.features.geo.application.OsmGeoRefreshService;
 import com.cyclerouteplanner.backend.features.geo.application.TallinnGeoRefreshService;
 import com.cyclerouteplanner.backend.features.geo.domain.GeoCacheIngestStatus;
@@ -11,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -24,10 +30,11 @@ class GeoCacheIngestControllerTest {
     @Test
     void statusReturnsCacheReadinessSnapshot() throws Exception {
         GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
         OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
         TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new GeoCacheIngestController(statusService, refreshService, tallinnRefreshService)
+                new GeoCacheIngestController(statusService, routingAuditService, refreshService, tallinnRefreshService)
         ).build();
 
         when(statusService.status()).thenReturn(new GeoCacheStatusResponse(
@@ -45,12 +52,43 @@ class GeoCacheIngestControllerTest {
     }
 
     @Test
-    void refreshOsmReturnsOk() throws Exception {
+    void routingAuditReturnsMergedGraphReadinessSnapshot() throws Exception {
         GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
         OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
         TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new GeoCacheIngestController(statusService, refreshService, tallinnRefreshService)
+                new GeoCacheIngestController(statusService, routingAuditService, refreshService, tallinnRefreshService)
+        ).build();
+
+        when(routingAuditService.audit()).thenReturn(new GeoRoutingAuditResponse(
+                Instant.parse("2026-04-23T00:00:00Z"),
+                new GeoRoutingAuditOsmResponse(1000, 600, 420, 310, 280, 190, 260, 110),
+                new GeoRoutingAuditTallinnResponse(400, 390, 390, 120, 1, 340),
+                new GeoRoutingAuditReadinessResponse(
+                        true,
+                        true,
+                        0.7,
+                        0.8717948718,
+                        List.of()
+                )
+        ));
+
+        mockMvc.perform(get("/api/geo/cache/routing-audit"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.osm.bikeCandidateLineRows").value(420))
+                .andExpect(jsonPath("$.tallinn.lineRowsOverlappingOsm").value(340))
+                .andExpect(jsonPath("$.readiness.readyForMergedOsmTallinnGraphBuild").value(true));
+    }
+
+    @Test
+    void refreshOsmReturnsOk() throws Exception {
+        GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
+        OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
+        TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new GeoCacheIngestController(statusService, routingAuditService, refreshService, tallinnRefreshService)
         ).build();
         when(refreshService.refreshTallinnCycleNetwork()).thenReturn(new GeoCacheIngestStatus(
                 true,
@@ -71,10 +109,11 @@ class GeoCacheIngestControllerTest {
     @Test
     void refreshTallinnReturnsOk() throws Exception {
         GeoCacheStatusService statusService = mock(GeoCacheStatusService.class);
+        GeoRoutingAuditService routingAuditService = mock(GeoRoutingAuditService.class);
         OsmGeoRefreshService refreshService = mock(OsmGeoRefreshService.class);
         TallinnGeoRefreshService tallinnRefreshService = mock(TallinnGeoRefreshService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new GeoCacheIngestController(statusService, refreshService, tallinnRefreshService)
+                new GeoCacheIngestController(statusService, routingAuditService, refreshService, tallinnRefreshService)
         ).build();
         when(tallinnRefreshService.refreshFromConfiguredSource()).thenReturn(new GeoCacheIngestStatus(
                 true,

@@ -1,7 +1,9 @@
 package com.cyclerouteplanner.backend.features.geo.api;
 
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheIngestResponse;
+import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoRoutingAuditResponse;
 import com.cyclerouteplanner.backend.features.geo.api.dto.response.GeoCacheStatusResponse;
+import com.cyclerouteplanner.backend.features.geo.application.GeoRoutingAuditService;
 import com.cyclerouteplanner.backend.features.geo.application.GeoCacheStatusService;
 import com.cyclerouteplanner.backend.features.geo.application.OsmGeoRefreshService;
 import com.cyclerouteplanner.backend.features.geo.application.TallinnGeoRefreshService;
@@ -20,15 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class GeoCacheIngestController {
 
     private final GeoCacheStatusService geoCacheStatusService;
+    private final GeoRoutingAuditService geoRoutingAuditService;
     private final OsmGeoRefreshService osmGeoRefreshService;
     private final TallinnGeoRefreshService tallinnGeoRefreshService;
 
     public GeoCacheIngestController(
             GeoCacheStatusService geoCacheStatusService,
+            GeoRoutingAuditService geoRoutingAuditService,
             OsmGeoRefreshService osmGeoRefreshService,
             TallinnGeoRefreshService tallinnGeoRefreshService
     ) {
         this.geoCacheStatusService = geoCacheStatusService;
+        this.geoRoutingAuditService = geoRoutingAuditService;
         this.osmGeoRefreshService = osmGeoRefreshService;
         this.tallinnGeoRefreshService = tallinnGeoRefreshService;
     }
@@ -36,6 +41,11 @@ public class GeoCacheIngestController {
     @GetMapping("/status")
     public ResponseEntity<GeoCacheStatusResponse> status() {
         return ResponseEntity.ok(geoCacheStatusService.status());
+    }
+
+    @GetMapping("/routing-audit")
+    public ResponseEntity<GeoRoutingAuditResponse> routingAudit() {
+        return ResponseEntity.ok(geoRoutingAuditService.audit());
     }
 
     @PostMapping("/osm/refresh")

@@ -61,11 +61,13 @@ Check ingest result:
 
 ```powershell
 Invoke-RestMethod "http://localhost:8080/api/geo/cache/status"
+Invoke-RestMethod "http://localhost:8080/api/geo/cache/routing-audit"
 ```
 
 Optional source connectivity checks:
 - `GET /api/address/connectivity`
 - `GET /api/osm/connectivity`
+- `GET /api/geo/cache/routing-audit` (core routing readiness for merged OSM + Tallinn graph build)
 
 Route option endpoints:
 - `POST /api/routes/options/refresh` (builds OSM-first options and enriches with Tallinn overlap where available)
