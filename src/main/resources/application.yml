@@ -61,7 +61,7 @@ geo:
   routing-automation:
     bootstrap-enabled: ${GEO_ROUTING_AUTOMATION_BOOTSTRAP_ENABLED:true}
     scheduler-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_ENABLED:false}
-    scheduler-cron: ${GEO_ROUTING_AUTOMATION_SCHEDULER_CRON:0 30 2 * * *}
+    scheduler-cron: ${GEO_ROUTING_AUTOMATION_SCHEDULER_CRON:0 30 2 * * MON}
     scheduler-osm-refresh-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_OSM_REFRESH_ENABLED:false}
     scheduler-tallinn-refresh-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_TALLINN_REFRESH_ENABLED:false}
     refresh-route-options-after-prepare: ${GEO_ROUTING_AUTOMATION_REFRESH_ROUTE_OPTIONS_AFTER_PREPARE:true}
