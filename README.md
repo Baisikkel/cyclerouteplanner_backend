@@ -70,6 +70,9 @@ Optional source connectivity checks:
 Route option endpoints:
 - `POST /api/routes/options/refresh` (builds OSM-first options and enriches with Tallinn overlap where available)
 - `GET /api/routes/options?limit=100`
+- `GET /api/routes/calculate?startLat=...&startLon=...&endLat=...&endLon=...`
+  - optional `profile` query param: `fastbike|safety|gravel|trekking`
+  - if `profile` is omitted (or unsupported), backend picks the best nearby persisted route-option profile and falls back to `fastbike`
 
 Dev-only endpoints (`API_DEV_ENDPOINTS_ENABLED=true`):
 - `POST /api/geo/cache/osm/ingest`

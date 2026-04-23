@@ -11,7 +11,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Profile({"local", "docker"})
@@ -19,6 +21,8 @@ public class RouteOptionService {
 
     private static final String SNAPSHOT_SOURCE = "routing_options";
     private static final String OPTIONS_SOURCE = "osm_with_optional_tallinn_enrichment";
+    private static final String DEFAULT_PROFILE = "fastbike";
+    private static final Set<String> SUPPORTED_PROFILES = Set.of("fastbike", "safety", "gravel", "trekking");
 
     private final RouteOptionPort routeOptionPort;
     private final DataSnapshotPort dataSnapshotPort;
@@ -59,5 +63,31 @@ public class RouteOptionService {
     public List<RouteOptionRecord> activeOptions(int limit) {
         int sanitizedLimit = Math.clamp(limit, 1, 500);
         return routeOptionPort.findActive(sanitizedLimit);
+    }
+
+    public String resolveRouteProfile(
+            String requestedProfile,
+            double startLat,
+            double startLon,
+            double endLat,
+            double endLon) {
+        String normalizedRequestedProfile = normalizeProfile(requestedProfile);
+        if (normalizedRequestedProfile != null) {
+            return normalizedRequestedProfile;
+        }
+        return routeOptionPort.findBestProfileHint(startLat, startLon, endLat, endLon)
+                .map(this::normalizeProfile)
+                .orElse(DEFAULT_PROFILE);
+    }
+
+    private String normalizeProfile(String profile) {
+        if (profile == null || profile.isBlank()) {
+            return null;
+        }
+        String normalized = profile.trim().toLowerCase(Locale.ROOT);
+        if (!SUPPORTED_PROFILES.contains(normalized)) {
+            return null;
+        }
+        return normalized;
     }
 }

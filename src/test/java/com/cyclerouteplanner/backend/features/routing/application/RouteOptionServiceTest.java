@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,6 +30,11 @@ class RouteOptionServiceTest {
             @Override
             public List<RouteOptionRecord> findActive(int limit) {
                 return List.of();
+            }
+
+            @Override
+            public Optional<String> findBestProfileHint(double startLat, double startLon, double endLat, double endLon) {
+                return Optional.empty();
             }
         };
         DataSnapshotPort snapshotPort = new DataSnapshotPort() {
@@ -75,6 +81,11 @@ class RouteOptionServiceTest {
                         "LINESTRING(24.7 59.4,24.8 59.41)"
                 ));
             }
+
+            @Override
+            public Optional<String> findBestProfileHint(double startLat, double startLon, double endLat, double endLon) {
+                return Optional.empty();
+            }
         };
         DataSnapshotPort snapshotPort = new DataSnapshotPort() {
             @Override
@@ -93,5 +104,95 @@ class RouteOptionServiceTest {
 
         assertEquals(1, options.size());
         assertEquals(List.of(1), capturedLimits);
+    }
+
+    @Test
+    void resolveRouteProfileUsesExplicitProfileWhenSupported() {
+        RouteOptionPort routeOptionPort = new RouteOptionPort() {
+            @Override
+            public int rebuildFromGeoCaches() {
+                return 0;
+            }
+
+            @Override
+            public List<RouteOptionRecord> findActive(int limit) {
+                return List.of();
+            }
+
+            @Override
+            public Optional<String> findBestProfileHint(double startLat, double startLon, double endLat, double endLon) {
+                return Optional.of("safety");
+            }
+        };
+        DataSnapshotPort snapshotPort = new NoopSnapshotPort();
+        RouteOptionService service = new RouteOptionService(routeOptionPort, snapshotPort);
+
+        String profile = service.resolveRouteProfile("Gravel", 59.43, 24.72, 59.44, 24.73);
+
+        assertEquals("gravel", profile);
+    }
+
+    @Test
+    void resolveRouteProfileUsesNearestHintWhenExplicitProfileUnsupported() {
+        RouteOptionPort routeOptionPort = new RouteOptionPort() {
+            @Override
+            public int rebuildFromGeoCaches() {
+                return 0;
+            }
+
+            @Override
+            public List<RouteOptionRecord> findActive(int limit) {
+                return List.of();
+            }
+
+            @Override
+            public Optional<String> findBestProfileHint(double startLat, double startLon, double endLat, double endLon) {
+                return Optional.of("safety");
+            }
+        };
+        DataSnapshotPort snapshotPort = new NoopSnapshotPort();
+        RouteOptionService service = new RouteOptionService(routeOptionPort, snapshotPort);
+
+        String profile = service.resolveRouteProfile("racebike", 59.43, 24.72, 59.44, 24.73);
+
+        assertEquals("safety", profile);
+    }
+
+    @Test
+    void resolveRouteProfileFallsBackToDefaultWhenNoHintExists() {
+        RouteOptionPort routeOptionPort = new RouteOptionPort() {
+            @Override
+            public int rebuildFromGeoCaches() {
+                return 0;
+            }
+
+            @Override
+            public List<RouteOptionRecord> findActive(int limit) {
+                return List.of();
+            }
+
+            @Override
+            public Optional<String> findBestProfileHint(double startLat, double startLon, double endLat, double endLon) {
+                return Optional.empty();
+            }
+        };
+        DataSnapshotPort snapshotPort = new NoopSnapshotPort();
+        RouteOptionService service = new RouteOptionService(routeOptionPort, snapshotPort);
+
+        String profile = service.resolveRouteProfile(null, 59.43, 24.72, 59.44, 24.73);
+
+        assertEquals("fastbike", profile);
+    }
+
+    private static final class NoopSnapshotPort implements DataSnapshotPort {
+        @Override
+        public DataSnapshotRecord upsert(String source, String sourceVersion, Instant sourceTimestamp, String checksum, Map<String, Object> metadata) {
+            return new DataSnapshotRecord(source, sourceVersion, sourceTimestamp, checksum, metadata, Instant.now());
+        }
+
+        @Override
+        public List<DataSnapshotRecord> findLatest(int limit) {
+            return List.of();
+        }
     }
 }

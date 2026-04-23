@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @Profile({"local", "docker"})
@@ -163,5 +164,39 @@ public class PostgresRouteOptionRepository implements RouteOptionPort {
                 ),
                 limit
         );
+    }
+
+    @Override
+    public Optional<String> findBestProfileHint(double startLat, double startLon, double endLat, double endLon) {
+        List<String> hints = jdbcTemplate.query(
+                """
+                with input_points as (
+                    select
+                        ST_SetSRID(ST_Point(?, ?), 4326) as start_point,
+                        ST_SetSRID(ST_Point(?, ?), 4326) as end_point
+                )
+                select ro.profile_hint
+                from routing.route_option ro, input_points ip
+                where ro.active = true
+                  and (
+                    ST_DWithin(ro.geom::geography, ip.start_point::geography, 2000.0)
+                    or ST_DWithin(ro.geom::geography, ip.end_point::geography, 2000.0)
+                  )
+                order by
+                    (
+                        ST_Distance(ro.geom::geography, ip.start_point::geography)
+                        + ST_Distance(ro.geom::geography, ip.end_point::geography)
+                    ) / greatest(ro.quality_score, 0.05) asc,
+                    ro.quality_score desc,
+                    ro.id asc
+                limit 1
+                """,
+                (rs, rowNum) -> rs.getString("profile_hint"),
+                startLon,
+                startLat,
+                endLon,
+                endLat
+        );
+        return hints.stream().findFirst();
     }
 }

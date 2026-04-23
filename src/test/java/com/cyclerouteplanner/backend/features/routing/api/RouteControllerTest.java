@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,7 +28,9 @@ class RouteControllerTest {
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
                 new RouteController(bRouterService, routeOptionService)
         ).build();
-        when(bRouterService.getRoute(59.43, 24.72, 59.44, 24.73))
+        when(routeOptionService.resolveRouteProfile(null, 59.43, 24.72, 59.44, 24.73))
+                .thenReturn("fastbike");
+        when(bRouterService.getRoute(59.43, 24.72, 59.44, 24.73, "fastbike"))
                 .thenReturn("{\"type\":\"FeatureCollection\",\"features\":[]}");
 
         mockMvc.perform(get("/api/routes/calculate")
@@ -36,7 +39,32 @@ class RouteControllerTest {
                         .param("endLat", "59.44")
                         .param("endLon", "24.73"))
                 .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Route-Profile", "fastbike"))
                 .andExpect(jsonPath("$.type").value("FeatureCollection"));
+    }
+
+    @Test
+    void calculateRouteUsesExplicitProfileWhenProvided() throws Exception {
+        BRouterService bRouterService = mock(BRouterService.class);
+        RouteOptionService routeOptionService = mock(RouteOptionService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new RouteController(bRouterService, routeOptionService)
+        ).build();
+        when(routeOptionService.resolveRouteProfile("gravel", 59.43, 24.72, 59.44, 24.73))
+                .thenReturn("gravel");
+        when(bRouterService.getRoute(59.43, 24.72, 59.44, 24.73, "gravel"))
+                .thenReturn("{\"type\":\"FeatureCollection\",\"features\":[]}");
+
+        mockMvc.perform(get("/api/routes/calculate")
+                        .param("startLat", "59.43")
+                        .param("startLon", "24.72")
+                        .param("endLat", "59.44")
+                        .param("endLon", "24.73")
+                        .param("profile", "gravel"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Route-Profile", "gravel"));
+
+        verify(routeOptionService).resolveRouteProfile("gravel", 59.43, 24.72, 59.44, 24.73);
     }
 
     @Test

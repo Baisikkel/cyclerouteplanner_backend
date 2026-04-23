@@ -52,9 +52,14 @@ public class RouteController {
             @RequestParam double startLat,
             @RequestParam double startLon,
             @RequestParam double endLat,
-            @RequestParam double endLon) {
-        String body = brouterService.getRoute(startLat, startLon, endLat, endLon);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body.getBytes(StandardCharsets.UTF_8));
+            @RequestParam double endLon,
+            @RequestParam(required = false) String profile) {
+        String resolvedProfile = routeOptionService.resolveRouteProfile(profile, startLat, startLon, endLat, endLon);
+        String body = brouterService.getRoute(startLat, startLon, endLat, endLon, resolvedProfile);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Route-Profile", resolvedProfile)
+                .body(body.getBytes(StandardCharsets.UTF_8));
     }
 
     @PostMapping("/options/refresh")
