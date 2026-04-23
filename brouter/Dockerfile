@@ -11,7 +11,7 @@
 # silently overwrite our customisations.
 FROM eclipse-temurin:21-jre-alpine
 
-ARG BROUTER_VERSION=1.7.8
+ARG BROUTER_VERSION=1.7.9
 
 ENV BROUTER_VERSION=${BROUTER_VERSION} \
     BROUTER_HOME=/opt/brouter \
