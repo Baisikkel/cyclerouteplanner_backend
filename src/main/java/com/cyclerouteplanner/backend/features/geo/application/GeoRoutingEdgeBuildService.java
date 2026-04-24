@@ -528,8 +528,6 @@ public class GeoRoutingEdgeBuildService {
                  BufferedWriter writer = new BufferedWriter(new java.io.OutputStreamWriter(wrappedOutput, StandardCharsets.UTF_8))) {
                 writer.write("#####waytags#####");
                 writer.newLine();
-                writer.write("losmid;noise_class;river_class;forest_class;town_class;traffic_class");
-                writer.newLine();
 
                 for (Map.Entry<Long, PseudoTagRow> entry : rowsByOsmWayId.entrySet()) {
                     PseudoTagRow row = entry.getValue();
