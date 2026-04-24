@@ -30,7 +30,7 @@ public class BRouterService {
     }
 
     public String getRoute(double startLat, double startLon, double endLat, double endLon) {
-        return getRoute(startLat, startLon, endLat, endLon, "trekking");
+        return getRoute(startLat, startLon, endLat, endLon, "fastbike");
     }
 
     public String getRoute(double startLat, double startLon, double endLat, double endLon, String profile) {

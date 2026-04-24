@@ -14,7 +14,7 @@ services:
       # Links internal DB folder to a named volume
       - "postgres_data:/var/lib/postgresql/data"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cyclerouteplanner}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,6 +27,9 @@ services:
       context: ./brouter
     container_name: "brouter"
     restart: unless-stopped
+    environment:
+      PLANET_AUTO_DOWNLOAD: "${BROUTER_PLANET_AUTO_DOWNLOAD:-true}"
+      PLANET_DOWNLOAD_URL: "${BROUTER_PLANET_DOWNLOAD_URL:-https://download.geofabrik.de/europe/estonia-latest.osm.pbf}"
     ports:
       # Exposed on the host so developers running the backend from their
       # IDE (outside docker) can still reach the engine at localhost:17777.
@@ -34,6 +37,10 @@ services:
     volumes:
       - ./brouter/profiles:/profiles
       - ./brouter/segments:/segments
+      - ./brouter/build-input:/build-input
+      - ./brouter/planet:/planet
+      - ./brouter/srtm1_bef:/srtm1_bef
+      - ./brouter/srtm3_bef:/srtm3_bef
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 17777 2>/dev/null || exit 1"]
       interval: 10s
@@ -70,6 +77,12 @@ services:
       GEO_TALLINN_SOURCE_LAYER: "${GEO_TALLINN_SOURCE_LAYER:-tallinn_open_data}"
       GEO_TALLINN_FEATURE_ID_PROPERTY: "${GEO_TALLINN_FEATURE_ID_PROPERTY:-id}"
       GEO_TALLINN_FEATURE_NAME_PROPERTY: "${GEO_TALLINN_FEATURE_NAME_PROPERTY:-name}"
+      GEO_ROUTING_AUTOMATION_BOOTSTRAP_ENABLED: "${GEO_ROUTING_AUTOMATION_BOOTSTRAP_ENABLED:-true}"
+      GEO_ROUTING_AUTOMATION_SCHEDULER_ENABLED: "${GEO_ROUTING_AUTOMATION_SCHEDULER_ENABLED:-false}"
+      GEO_ROUTING_AUTOMATION_SCHEDULER_CRON: "${GEO_ROUTING_AUTOMATION_SCHEDULER_CRON:-0 30 2 * * MON}"
+      GEO_ROUTING_AUTOMATION_SCHEDULER_OSM_REFRESH_ENABLED: "${GEO_ROUTING_AUTOMATION_SCHEDULER_OSM_REFRESH_ENABLED:-false}"
+      GEO_ROUTING_AUTOMATION_SCHEDULER_TALLINN_REFRESH_ENABLED: "${GEO_ROUTING_AUTOMATION_SCHEDULER_TALLINN_REFRESH_ENABLED:-false}"
+      GEO_ROUTING_AUTOMATION_REFRESH_ROUTE_OPTIONS_AFTER_PREPARE: "${GEO_ROUTING_AUTOMATION_REFRESH_ROUTE_OPTIONS_AFTER_PREPARE:-true}"
       # Inside the docker network, brouter is reachable at http://brouter:17777.
       ROUTING_BROUTER_BASE_URL: "${ROUTING_BROUTER_BASE_URL:-http://brouter:17777/brouter}"
     depends_on:
