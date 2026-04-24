@@ -48,6 +48,8 @@ geo:
     tallinn-source-layer: ${GEO_TALLINN_SOURCE_LAYER:tallinn_open_data}
     tallinn-feature-id-property: ${GEO_TALLINN_FEATURE_ID_PROPERTY:id}
     tallinn-feature-name-property: ${GEO_TALLINN_FEATURE_NAME_PROPERTY:name}
+    tallinn-page-size: ${GEO_TALLINN_PAGE_SIZE:2000}
+    tallinn-max-pages: ${GEO_TALLINN_MAX_PAGES:100}
   refresh:
     scheduler:
       enabled: ${GEO_REFRESH_SCHEDULER_ENABLED:false}
