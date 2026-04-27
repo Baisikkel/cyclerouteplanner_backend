@@ -1,5 +1,7 @@
 package com.cyclerouteplanner.backend.features.routing.application;
 
+import com.cyclerouteplanner.backend.features.routing.domain.RouteWaypoint;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -34,7 +36,14 @@ public class BRouterService {
     }
 
     public String getRoute(double startLat, double startLon, double endLat, double endLon, String profile) {
-        String lonlats = startLon + "," + startLat + "|" + endLon + "," + endLat;
+        return getRoute(List.of(
+                new RouteWaypoint(startLat, startLon),
+                new RouteWaypoint(endLat, endLon)
+        ), profile);
+    }
+
+    public String getRoute(List<RouteWaypoint> waypoints, String profile) {
+        String lonlats = buildLonlats(waypoints);
 
         return brouterRestClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -45,5 +54,12 @@ public class BRouterService {
                         .build())
                 .retrieve()
                 .body(String.class);
+    }
+
+    String buildLonlats(List<RouteWaypoint> waypoints) {
+        return waypoints.stream()
+                .map(waypoint -> waypoint.longitude() + "," + waypoint.latitude())
+                .reduce((left, right) -> left + "|" + right)
+                .orElseThrow(() -> new IllegalArgumentException("at least one waypoint is required"));
     }
 }
