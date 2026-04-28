@@ -25,11 +25,25 @@ public class OverpassOsmGeoSourceClient implements OsmGeoSourcePort {
         String query = """
                 [out:json][timeout:%d];
                 (
-                  way["highway"="cycleway"](%s);
+                  relation["type"="route"]["route"="bicycle"](%s);
+                )->.bikeRoutes;
+                (
+                  way["highway"~"cycleway|path|track|residential|living_street|service|unclassified|tertiary|tertiary_link|secondary|secondary_link|primary|primary_link|road|footway|pedestrian|bridleway|steps"]
+                     ["access"!~"no|private"]
+                     ["bicycle"!~"no|private"](%s);
+                  way["bicycle"~"yes|designated|permissive"]["highway"](%s);
                   way["cycleway"](%s);
-                );
-                out body geom;
-                """.formatted(timeoutSeconds, bbox, bbox);
+                  way["cycleway:left"](%s);
+                  way["cycleway:right"](%s);
+                  way(r.bikeRoutes);
+                )->.bikeWays;
+                (
+                  node["barrier"](%s);
+                )->.barrierNodes;
+                .bikeRoutes out body;
+                .bikeWays out body geom;
+                .barrierNodes out body;
+                """.formatted(timeoutSeconds, bbox, bbox, bbox, bbox, bbox, bbox, bbox);
 
         return overpassRestClient.post()
                 .uri("/interpreter")

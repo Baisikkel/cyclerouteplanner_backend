@@ -21,11 +21,11 @@ ENV BROUTER_VERSION=${BROUTER_VERSION} \
 
 WORKDIR /opt
 
-# Runtime dependency: nc (netcat) is used by the docker-compose healthcheck
-# to confirm the port is open. Alpine's busybox ships a minimal nc, but
-# installing netcat-openbsd explicitly makes the dependency visible in the
-# Dockerfile and survives any future change of the base image.
-RUN apk add --no-cache netcat-openbsd
+# Runtime dependencies:
+# - nc (netcat) is used by the docker-compose healthcheck
+# - curl is used by build-segments-with-pseudotags.sh for optional
+#   auto-download of the base OSM PBF file when PLANET_FILE is missing.
+RUN apk add --no-cache netcat-openbsd curl
 
 # Download the release zip from GitHub and extract it to /opt/brouter.
 # The zip contains a JAR file whose filename includes the version
@@ -45,12 +45,15 @@ RUN apk add --no-cache --virtual .build-deps curl unzip \
 # paths so brouter can read them:
 #   /segments       -> map data files (.rd5) from fetch-segments.sh
 #   /profiles       -> routing profiles (.brf) from deploy/brouter/profiles/
+#   /build-input    -> exported merged OSM+Tallinn edges from backend
 #   /customprofiles -> empty for now; reserved for a future feature where
 #                      the frontend sends custom routing rules per request
-RUN mkdir -p /segments /profiles /customprofiles
+RUN mkdir -p /segments /profiles /build-input /customprofiles
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY build-segments-with-pseudotags.sh /usr/local/bin/build-segments-with-pseudotags.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh /usr/local/bin/build-segments-with-pseudotags.sh \
+ && chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/build-segments-with-pseudotags.sh
 
 EXPOSE 17777
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

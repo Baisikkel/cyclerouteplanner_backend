@@ -48,6 +48,8 @@ geo:
     tallinn-source-layer: ${GEO_TALLINN_SOURCE_LAYER:tallinn_open_data}
     tallinn-feature-id-property: ${GEO_TALLINN_FEATURE_ID_PROPERTY:id}
     tallinn-feature-name-property: ${GEO_TALLINN_FEATURE_NAME_PROPERTY:name}
+    tallinn-page-size: ${GEO_TALLINN_PAGE_SIZE:2000}
+    tallinn-max-pages: ${GEO_TALLINN_MAX_PAGES:100}
   refresh:
     scheduler:
       enabled: ${GEO_REFRESH_SCHEDULER_ENABLED:false}
@@ -55,6 +57,16 @@ geo:
       ads-enabled: ${GEO_REFRESH_SCHEDULER_ADS_ENABLED:true}
       osm-enabled: ${GEO_REFRESH_SCHEDULER_OSM_ENABLED:true}
       tallinn-enabled: ${GEO_REFRESH_SCHEDULER_TALLINN_ENABLED:true}
+  routing-edges:
+    export-output-path: ${GEO_ROUTING_EDGES_EXPORT_OUTPUT_PATH:brouter/build-input/routing_edges.geojson}
+    export-pseudo-tags-output-path: ${GEO_ROUTING_EDGES_EXPORT_PSEUDO_TAGS_OUTPUT_PATH:brouter/build-input/db_tags.csv.gz}
+  routing-automation:
+    bootstrap-enabled: ${GEO_ROUTING_AUTOMATION_BOOTSTRAP_ENABLED:true}
+    scheduler-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_ENABLED:false}
+    scheduler-cron: ${GEO_ROUTING_AUTOMATION_SCHEDULER_CRON:0 30 2 * * MON}
+    scheduler-osm-refresh-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_OSM_REFRESH_ENABLED:false}
+    scheduler-tallinn-refresh-enabled: ${GEO_ROUTING_AUTOMATION_SCHEDULER_TALLINN_REFRESH_ENABLED:false}
+    refresh-route-options-after-prepare: ${GEO_ROUTING_AUTOMATION_REFRESH_ROUTE_OPTIONS_AFTER_PREPARE:true}
 
 routing:
   brouter:
