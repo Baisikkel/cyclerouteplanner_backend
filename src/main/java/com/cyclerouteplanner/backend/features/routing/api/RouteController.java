@@ -1,11 +1,15 @@
 package com.cyclerouteplanner.backend.features.routing.api;
 
-import com.cyclerouteplanner.backend.features.routing.application.BRouterService;
+import com.cyclerouteplanner.backend.features.routing.api.dto.request.RouteCalculationRequest;
+import com.cyclerouteplanner.backend.features.routing.api.dto.request.RouteWaypointRequest;
+import com.cyclerouteplanner.backend.features.routing.application.RouteCalculationResult;
+import com.cyclerouteplanner.backend.features.routing.application.RouteCalculationService;
 import com.cyclerouteplanner.backend.features.routing.application.RouteOptionService;
 import com.cyclerouteplanner.backend.features.routing.api.dto.response.RouteOptionRefreshResponse;
 import com.cyclerouteplanner.backend.features.routing.api.dto.response.RouteOptionResponse;
 import com.cyclerouteplanner.backend.features.routing.domain.RouteOptionRecord;
 import com.cyclerouteplanner.backend.features.routing.domain.RouteOptionRefreshStatus;
+import com.cyclerouteplanner.backend.features.routing.domain.RouteWaypoint;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
@@ -16,8 +20,10 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/routes")
@@ -35,11 +41,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Profile({"local", "docker"})
 public class RouteController {
 
-    private final BRouterService brouterService;
+    private final RouteCalculationService routeCalculationService;
     private final RouteOptionService routeOptionService;
 
-    public RouteController(BRouterService brouterService, RouteOptionService routeOptionService) {
-        this.brouterService = brouterService;
+    public RouteController(RouteCalculationService routeCalculationService, RouteOptionService routeOptionService) {
+        this.routeCalculationService = routeCalculationService;
         this.routeOptionService = routeOptionService;
     }
 
@@ -54,12 +60,25 @@ public class RouteController {
             @RequestParam double endLat,
             @RequestParam double endLon,
             @RequestParam(required = false) String profile) {
-        String resolvedProfile = routeOptionService.resolveRouteProfile(profile, startLat, startLon, endLat, endLon);
-        String body = brouterService.getRoute(startLat, startLon, endLat, endLon, resolvedProfile);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-Route-Profile", resolvedProfile)
-                .body(body.getBytes(StandardCharsets.UTF_8));
+        try {
+            RouteCalculationResult result = routeCalculationService.calculate(startLat, startLon, endLat, endLon, profile);
+            return routeResponse(result);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+    }
+
+    @PostMapping(value = "/calculate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<byte[]> calculateRoute(@RequestBody RouteCalculationRequest request) {
+        try {
+            RouteCalculationResult result = routeCalculationService.calculate(
+                    toWaypoints(request),
+                    request == null ? null : request.profile()
+            );
+            return routeResponse(result);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
     }
 
     @PostMapping("/options/refresh")
@@ -95,5 +114,28 @@ public class RouteController {
                 option.enrichmentType(),
                 option.wktGeometry()
         );
+    }
+
+    private ResponseEntity<byte[]> routeResponse(RouteCalculationResult result) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Route-Profile", result.resolvedProfile())
+                .body(result.geoJson().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private List<RouteWaypoint> toWaypoints(RouteCalculationRequest request) {
+        if (request == null || request.waypoints() == null) {
+            return null;
+        }
+        return request.waypoints().stream()
+                .map(this::toWaypoint)
+                .toList();
+    }
+
+    private RouteWaypoint toWaypoint(RouteWaypointRequest waypoint) {
+        if (waypoint == null) {
+            return null;
+        }
+        return new RouteWaypoint(waypoint.lat(), waypoint.lon());
     }
 }

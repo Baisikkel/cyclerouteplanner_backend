@@ -1,10 +1,13 @@
 package com.cyclerouteplanner.backend.features.routing.api;
 
-import com.cyclerouteplanner.backend.features.routing.application.BRouterService;
+import com.cyclerouteplanner.backend.features.routing.application.RouteCalculationResult;
+import com.cyclerouteplanner.backend.features.routing.application.RouteCalculationService;
 import com.cyclerouteplanner.backend.features.routing.application.RouteOptionService;
 import com.cyclerouteplanner.backend.features.routing.domain.RouteOptionRecord;
 import com.cyclerouteplanner.backend.features.routing.domain.RouteOptionRefreshStatus;
+import com.cyclerouteplanner.backend.features.routing.domain.RouteWaypoint;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -23,15 +26,13 @@ class RouteControllerTest {
 
     @Test
     void calculateRouteReturnsBrouterPayload() throws Exception {
-        BRouterService bRouterService = mock(BRouterService.class);
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
         RouteOptionService routeOptionService = mock(RouteOptionService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new RouteController(bRouterService, routeOptionService)
+                new RouteController(routeCalculationService, routeOptionService)
         ).build();
-        when(routeOptionService.resolveRouteProfile(null, 59.43, 24.72, 59.44, 24.73))
-                .thenReturn("fastbike");
-        when(bRouterService.getRoute(59.43, 24.72, 59.44, 24.73, "fastbike"))
-                .thenReturn("{\"type\":\"FeatureCollection\",\"features\":[]}");
+        when(routeCalculationService.calculate(59.43, 24.72, 59.44, 24.73, null))
+                .thenReturn(new RouteCalculationResult("{\"type\":\"FeatureCollection\",\"features\":[]}", "fastbike"));
 
         mockMvc.perform(get("/api/routes/calculate")
                         .param("startLat", "59.43")
@@ -45,15 +46,13 @@ class RouteControllerTest {
 
     @Test
     void calculateRouteUsesExplicitProfileWhenProvided() throws Exception {
-        BRouterService bRouterService = mock(BRouterService.class);
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
         RouteOptionService routeOptionService = mock(RouteOptionService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new RouteController(bRouterService, routeOptionService)
+                new RouteController(routeCalculationService, routeOptionService)
         ).build();
-        when(routeOptionService.resolveRouteProfile("gravel", 59.43, 24.72, 59.44, 24.73))
-                .thenReturn("gravel");
-        when(bRouterService.getRoute(59.43, 24.72, 59.44, 24.73, "gravel"))
-                .thenReturn("{\"type\":\"FeatureCollection\",\"features\":[]}");
+        when(routeCalculationService.calculate(59.43, 24.72, 59.44, 24.73, "gravel"))
+                .thenReturn(new RouteCalculationResult("{\"type\":\"FeatureCollection\",\"features\":[]}", "gravel"));
 
         mockMvc.perform(get("/api/routes/calculate")
                         .param("startLat", "59.43")
@@ -64,15 +63,96 @@ class RouteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Route-Profile", "gravel"));
 
-        verify(routeOptionService).resolveRouteProfile("gravel", 59.43, 24.72, 59.44, 24.73);
+        verify(routeCalculationService).calculate(59.43, 24.72, 59.44, 24.73, "gravel");
+    }
+
+    @Test
+    void calculateRoutePostSupportsMultipleWaypoints() throws Exception {
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
+        RouteOptionService routeOptionService = mock(RouteOptionService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new RouteController(routeCalculationService, routeOptionService)
+        ).build();
+        List<RouteWaypoint> waypoints = List.of(
+                new RouteWaypoint(59.43, 24.72),
+                new RouteWaypoint(59.44, 24.73),
+                new RouteWaypoint(59.45, 24.74)
+        );
+        when(routeCalculationService.calculate(waypoints, "fastbike"))
+                .thenReturn(new RouteCalculationResult("{\"type\":\"FeatureCollection\",\"features\":[]}", "fastbike"));
+
+        mockMvc.perform(post("/api/routes/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "waypoints": [
+                                    { "lat": 59.43, "lon": 24.72 },
+                                    { "lat": 59.44, "lon": 24.73 },
+                                    { "lat": 59.45, "lon": 24.74 }
+                                  ],
+                                  "profile": "fastbike"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Route-Profile", "fastbike"))
+                .andExpect(jsonPath("$.type").value("FeatureCollection"));
+
+        verify(routeCalculationService).calculate(waypoints, "fastbike");
+    }
+
+    @Test
+    void calculateRoutePostRejectsTooFewWaypoints() throws Exception {
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
+        RouteOptionService routeOptionService = mock(RouteOptionService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new RouteController(routeCalculationService, routeOptionService)
+        ).build();
+        when(routeCalculationService.calculate(List.of(new RouteWaypoint(59.43, 24.72)), null))
+                .thenThrow(new IllegalArgumentException("at least 2 waypoints are required"));
+
+        mockMvc.perform(post("/api/routes/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "waypoints": [
+                                    { "lat": 59.43, "lon": 24.72 }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void calculateRoutePostRejectsInvalidCoordinates() throws Exception {
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
+        RouteOptionService routeOptionService = mock(RouteOptionService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new RouteController(routeCalculationService, routeOptionService)
+        ).build();
+        when(routeCalculationService.calculate(List.of(
+                new RouteWaypoint(91, 24.72),
+                new RouteWaypoint(59.44, 24.73)
+        ), null)).thenThrow(new IllegalArgumentException("latitude must be between -90 and 90"));
+
+        mockMvc.perform(post("/api/routes/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "waypoints": [
+                                    { "lat": 91, "lon": 24.72 },
+                                    { "lat": 59.44, "lon": 24.73 }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void refreshOptionsReturnsStatusPayload() throws Exception {
-        BRouterService bRouterService = mock(BRouterService.class);
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
         RouteOptionService routeOptionService = mock(RouteOptionService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new RouteController(bRouterService, routeOptionService)
+                new RouteController(routeCalculationService, routeOptionService)
         ).build();
         when(routeOptionService.refreshFromGeoCaches()).thenReturn(new RouteOptionRefreshStatus(
                 true,
@@ -90,10 +170,10 @@ class RouteControllerTest {
 
     @Test
     void listOptionsReturnsCurrentRouteOptions() throws Exception {
-        BRouterService bRouterService = mock(BRouterService.class);
+        RouteCalculationService routeCalculationService = mock(RouteCalculationService.class);
         RouteOptionService routeOptionService = mock(RouteOptionService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new RouteController(bRouterService, routeOptionService)
+                new RouteController(routeCalculationService, routeOptionService)
         ).build();
         when(routeOptionService.activeOptions(2)).thenReturn(List.of(
                 new RouteOptionRecord(

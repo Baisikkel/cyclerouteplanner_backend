@@ -1,5 +1,6 @@
 package com.cyclerouteplanner.backend.features.address.application;
 
+import com.cyclerouteplanner.backend.core.util.TextUtils;
 import com.cyclerouteplanner.backend.features.address.domain.AdsAddressCacheEntry;
 import com.cyclerouteplanner.backend.features.address.domain.AdsAddressCachePort;
 import com.cyclerouteplanner.backend.features.address.domain.AdsCacheRefreshStatus;
@@ -44,7 +45,7 @@ public class AdsCacheRefreshService {
     public AdsCacheRefreshStatus refresh(String query, int limit) {
         int sanitizedLimit = Math.clamp(limit, 1, 500);
         try {
-            String payload = adsGatewayPort.search(query, sanitizedLimit);
+            String payload = adsGatewayPort.searchRaw(query, sanitizedLimit);
             int upsertedCount = upsertAddresses(payload);
 
             dataSnapshotPort.upsert(
@@ -126,7 +127,7 @@ public class AdsCacheRefreshService {
     private AdsAddressCacheEntry toEntry(JsonNode node) {
         String adsOid = firstText(node, "ads_oid", "oid", "id", "tunnus");
         String fullAddress = firstText(node, "full_address", "address", "koodaadress", "nimi");
-        if (isBlank(adsOid) || isBlank(fullAddress)) {
+        if (TextUtils.isBlank(adsOid) || TextUtils.isBlank(fullAddress)) {
             return null;
         }
 
@@ -162,7 +163,7 @@ public class AdsCacheRefreshService {
             JsonNode value = node.get(fieldName);
             if (value != null && !value.isNull()) {
                 String text = value.asText();
-                if (!isBlank(text)) {
+                if (!TextUtils.isBlank(text)) {
                     return text;
                 }
             }
@@ -187,7 +188,4 @@ public class AdsCacheRefreshService {
         return null;
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
 }

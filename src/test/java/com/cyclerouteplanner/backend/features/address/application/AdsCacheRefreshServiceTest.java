@@ -2,6 +2,7 @@ package com.cyclerouteplanner.backend.features.address.application;
 
 import com.cyclerouteplanner.backend.features.address.domain.AdsAddressCacheEntry;
 import com.cyclerouteplanner.backend.features.address.domain.AdsAddressCachePort;
+import com.cyclerouteplanner.backend.features.address.domain.AdsAddressSuggestion;
 import com.cyclerouteplanner.backend.features.address.domain.AdsCacheRefreshStatus;
 import com.cyclerouteplanner.backend.features.address.domain.AdsGatewayPort;
 import com.cyclerouteplanner.backend.features.ingest.domain.DataSnapshotPort;
@@ -31,7 +32,12 @@ class AdsCacheRefreshServiceTest {
             }
 
             @Override
-            public String search(String query, int limit) {
+            public List<AdsAddressSuggestion> search(String query, int limit) {
+                return List.of();
+            }
+
+            @Override
+            public String searchRaw(String query, int limit) {
                 return """
                         {
                           "results": [
@@ -83,7 +89,12 @@ class AdsCacheRefreshServiceTest {
             }
 
             @Override
-            public String search(String query, int limit) {
+            public List<AdsAddressSuggestion> search(String query, int limit) {
+                return List.of();
+            }
+
+            @Override
+            public String searchRaw(String query, int limit) {
                 throw new IllegalStateException("ADS unavailable");
             }
         };
