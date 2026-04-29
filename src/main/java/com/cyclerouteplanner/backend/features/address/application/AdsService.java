@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class AdsService {
 
     private static final String PROVIDER = "maa-amet-ads";
-    private static final int MIN_QUERY_LENGTH = 2;
+    private static final int MIN_QUERY_LENGTH = 3;
     private static final int MAX_SEARCH_LIMIT = 10;
     private final AdsGatewayPort adsGatewayPort;
 
