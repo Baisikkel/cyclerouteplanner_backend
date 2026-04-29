@@ -99,7 +99,7 @@ class AdsServiceTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.search("t", 5));
 
-        assertEquals("query must be at least 2 characters", ex.getMessage());
+        assertEquals("query must be at least 3 characters", ex.getMessage());
     }
 
     @Test
