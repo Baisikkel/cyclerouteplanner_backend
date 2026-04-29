@@ -37,7 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
  * originPatterns + allowCredentials lets Spring echo a concrete Origin (e.g. http://localhost:5173).
  * Widen patterns for staging/production when you know real front-end origins; avoid * with credentials.
  */
-@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"}, allowCredentials = "true")
+@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*", "https://baisikkel.models.ee"}, allowCredentials = "true")
 @Profile({"local", "docker"})
 public class RouteController {
 
